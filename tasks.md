@@ -1,5 +1,25 @@
 # iDNA MVP Tasks Backlog (October 2025)
 
+Progress Log (newest first)
+- 2025-10-11 — Per-type guidance on Assessment Hub
+  - Completed: inline instructions block under each type; reads `fieldsJson.instructions` when present, otherwise shows default steps
+  - Notes: Edit instructions via DB `assessment_types.fields_json.instructions`
+- 2025-10-11 — Assessment Hub upload UI
+  - Completed: STOR-02 (drag-and-drop uploader), API-04 (assessments list), student upload status on page
+  - Notes: File types JPG/PNG/PDF, 10MB max; opens external provider link in new tab with rel=noopener; status inferred from my uploads
+- 2025-10-11 — Student dashboard shows results
+  - Completed: INT-04 (approved results render on dashboard with confidence + timestamps)
+  - Notes: Uses orpc.studentAssessments.listApproved; JSON preview is collapsed block; shows 0 results if none approved
+- 2025-10-11 — Role-based UI gating
+  - Completed: UI-Role-01 hook + header update; Admin link shown only for admins
+  - Next up: INT-04 (render approved results on student dashboard)
+  - Notes: Uses auth session.role; no visible changes for non-admins
+- 2025-10-11 — Staff Review Console shipped
+  - Completed: AR-01 (admin auth gate), AR-02 (review queue), AR-03 (detail view + edit/approve/reject)
+  - Completed earlier in session: STOR-01 (R2 storage), API-05 (upload intake), API-09 (preview URL), INT-03 (upload→AI), AI-01 (provider iface), AI-02 (schemas + basic tests), AUTH-01..03
+  - Next up: UI-Role-01 (role-based UI gating), INT-04 (render approved results on student dashboard)
+  - Notes: Configure R2_* and GOOGLE_GENERATIVE_AI_API_KEY in apps/server/.env; admin role required for /admin
+
 Legend: `[]` Todo, `[~]` In‑Progress, `[x]` Done. Sizes: S (≤2h), M (≤6h). Estimates are rough. Tasks are grouped by epics and sized small–medium. Each task lists acceptance criteria and key paths.
 
 Notes & Assumptions
@@ -48,7 +68,7 @@ Notes & Assumptions
 
 ## UI Guardrails
 
-- [ ] UI-Role-01 Role-based UI gating (S)
+- [x] UI-Role-01 Role-based UI gating (S)
   - DoD: Hide coach/admin-only nav and actions when `session.user.role` lacks required role; add simple hook `useHasRole` and conditional rendering; add smoke test.
   - Paths: `apps/web/src/components/header.tsx`, `apps/web/src/lib/auth-client.ts`, `apps/web/src/hooks/use-has-role.ts`.
 
@@ -100,7 +120,7 @@ Notes & Assumptions
   - DoD: Interface `StorageService` with `put`, `getSignedUrl`, `delete`; S3 implementation.
   - Paths: `apps/server/src/lib/storage.ts`.
 
-- [ ] STOR-02 Frontend upload widget (S)
+- [x] STOR-02 Frontend upload widget (S)
   - DoD: Drag‑and‑drop + picker; 10 MB limit; mime whitelist (jpg/png/pdf); previews; a11y complete.
   - Paths: `apps/web/src/components/upload/*`.
 
@@ -152,7 +172,7 @@ Notes & Assumptions
   - DoD: Define `AssessmentExtractor` with `extract(upload: Buffer, type: AssessmentType): Promise<ExtractedResult>`; adapters for OpenAI Vision and AWS Textract; provider chosen via env.
   - Paths: `apps/server/src/ai/providers/*`.
 
-- [~] AI-02 Structured schema & prompts (M)
+- [x] AI-02 Structured schema & prompts (M)
   - DoD: JSON schemas per assessment (e.g., 16Personalities, Big Five, DISC); system prompts/instructions to produce strict JSON; unit tests against sample images.
   - Paths: `apps/server/src/ai/schemas/*`, `apps/server/test/ai/*`.
 
@@ -176,15 +196,15 @@ Notes & Assumptions
 
 ## Staff Review Console (Admin)
 
-- [ ] AR-01 Admin route & auth gate (S)
+- [x] AR-01 Admin route & auth gate (S)
   - DoD: `/admin` layout; only admin role can access.
   - Paths: `apps/web/src/app/admin/layout.tsx`.
 
-- [ ] AR-02 Review queue list (S)
+- [x] AR-02 Review queue list (S)
   - DoD: Table of `assessment_uploads` with status, student, type, submitted_at, confidence; filters.
   - Paths: `apps/web/src/app/admin/assessments/page.tsx`.
 
-- [ ] AR-03 Side‑by‑side review (M)
+- [x] AR-03 Side‑by‑side review (M)
   - DoD: Viewer shows original image/PDF preview and parsed JSON rendered nicely; edit form with validation; Approve/Reject.
   - Paths: `apps/web/src/app/admin/assessments/[id]/page.tsx`.
 
@@ -236,7 +256,7 @@ Notes & Assumptions
   - DoD: Upload → storage → create `assessment_upload` → AI job → status updates; UI shows pending/needs_review/approved.
   - Paths: UI + API + jobs (see above).
 
-- [ ] INT-04 Results rendering (S)
+- [x] INT-04 Results rendering (S)
   - DoD: Approved results appear on student dashboard cards; confidence badge; last updated stamp.
   - Paths: `apps/web/src/components/assessments/AssessmentCard.tsx`.
 
