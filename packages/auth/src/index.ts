@@ -11,8 +11,17 @@ export const auth = betterAuth({
 	}),
 	trustedOrigins: [process.env.CORS_ORIGIN || ""],
 	emailAndPassword: {
-		enabled: true,
-	},
+    enabled: true,
+  },
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      redirectURI: `${process.env.BETTER_AUTH_URL}/api/auth/callback/google`,
+      scope: ["openid", "email", "profile"],
+      enabled: true,
+    },
+  },
 	advanced: {
 		defaultCookieAttributes: {
 			sameSite: "none",

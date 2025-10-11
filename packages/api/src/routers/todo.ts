@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq } from "@idna/db";
 import z from "zod";
 import { db } from "@idna/db";
 import { todo } from "@idna/db/schema/todo";
@@ -23,12 +23,12 @@ export const todoRouter = {
 			return await db
 				.update(todo)
 				.set({ completed: input.completed })
-				.where(eq(todo.id, input.id));
+				.where(eq(todo.id as any, input.id) as any);
 		}),
 
 	delete: publicProcedure
 		.input(z.object({ id: z.number() }))
 		.handler(async ({ input }) => {
-			return await db.delete(todo).where(eq(todo.id, input.id));
+			return await db.delete(todo).where(eq(todo.id as any, input.id) as any);
 		}),
 };

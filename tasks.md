@@ -34,17 +34,23 @@ Notes & Assumptions
 
 ## Authentication & Access Control
 
-- [ ] AUTH-01 Google OAuth provider (S)
+- [x] AUTH-01 Google OAuth provider (S)
   - DoD: Enable Google in `better-auth`; callback works locally; user record persisted in `user` table.
   - Paths: `packages/auth/src/index.ts`, `apps/web/src/lib/auth-client.ts`.
 
-- [ ] AUTH-02 Session & role model (S)
+- [x] AUTH-02 Session & role model (S)
   - DoD: Add roles enum (student, coach, admin); assign default=student; expose role in session context.
   - Paths: `packages/db/src/schema/auth.ts`, `packages/api/src/context.ts`.
 
-- [ ] AUTH-03 Coach access rules (M)
+- [x] AUTH-03 Coach access rules (M)
   - DoD: Server guards so coaches can only access assigned students; unit tests for allow/deny.
-  - Paths: `apps/server/src/api/`, `packages/api/src/routers/*`.
+  - Paths: `packages/api/src/guards.ts`, `packages/api/src/context.ts`.
+
+## UI Guardrails
+
+- [ ] UI-Role-01 Role-based UI gating (S)
+  - DoD: Hide coach/admin-only nav and actions when `session.user.role` lacks required role; add simple hook `useHasRole` and conditional rendering; add smoke test.
+  - Paths: `apps/web/src/components/header.tsx`, `apps/web/src/lib/auth-client.ts`, `apps/web/src/hooks/use-has-role.ts`.
 
 ---
 
@@ -90,7 +96,7 @@ Notes & Assumptions
 
 ## Storage & Files
 
-- [ ] STOR-01 Storage provider abstraction (S)
+- [x] STOR-01 Storage provider abstraction (S)
   - DoD: Interface `StorageService` with `put`, `getSignedUrl`, `delete`; S3 implementation.
   - Paths: `apps/server/src/lib/storage.ts`.
 
@@ -102,7 +108,7 @@ Notes & Assumptions
 
 ## API (oRPC/Hono)
 
-- [ ] API-01 Context wiring (S)
+- [x] API-01 Context wiring (S)
   - DoD: Expose session and role in oRPC context; health route green.
   - Paths: `packages/api/src/context.ts`, `packages/api/src/index.ts`.
 
@@ -118,9 +124,13 @@ Notes & Assumptions
   - DoD: List assessment types; mark required/optional; link to provider_url.
   - Paths: `packages/api/src/routers/assessments.ts`.
 
-- [ ] API-05 Assessment upload intake (M)
+- [x] API-05 Assessment upload intake (M)
   - DoD: Create `assessment_upload` record, accept file, store via `StorageService`, return status `uploaded`.
   - Paths: `apps/server/src/api/assessments/upload.ts`.
+
+- [x] API-09 Assessment preview URL (S)
+  - DoD: GET `/uploads/assessments/:id/url` returns presigned URL; access limited to self, assigned coach, or admin.
+  - Paths: `apps/server/src/api/assessments/preview.ts`.
 
 - [ ] API-06 AI processing trigger (S)
   - DoD: On successful upload, enqueue background job (or call inline in dev) to start AI extraction; idempotent.
@@ -138,11 +148,11 @@ Notes & Assumptions
 
 ## Automatic Assessment Image Processing (AI SDK)
 
-- [ ] AI-01 Provider interface (S)
+- [x] AI-01 Provider interface (S)
   - DoD: Define `AssessmentExtractor` with `extract(upload: Buffer, type: AssessmentType): Promise<ExtractedResult>`; adapters for OpenAI Vision and AWS Textract; provider chosen via env.
   - Paths: `apps/server/src/ai/providers/*`.
 
-- [ ] AI-02 Structured schema & prompts (M)
+- [~] AI-02 Structured schema & prompts (M)
   - DoD: JSON schemas per assessment (e.g., 16Personalities, Big Five, DISC); system prompts/instructions to produce strict JSON; unit tests against sample images.
   - Paths: `apps/server/src/ai/schemas/*`, `apps/server/test/ai/*`.
 
@@ -222,7 +232,7 @@ Notes & Assumptions
   - DoD: Dashboard pulls real progress from `progress` endpoint; optimistic updates on completion.
   - Paths: `apps/web/src/app/dashboard/page.tsx`.
 
-- [ ] INT-03 Upload flow E2E (M)
+- [x] INT-03 Upload flow E2E (M)
   - DoD: Upload → storage → create `assessment_upload` → AI job → status updates; UI shows pending/needs_review/approved.
   - Paths: UI + API + jobs (see above).
 

@@ -10,3 +10,6 @@ export const pool = new Pool({
 });
 
 export const db = drizzle(pool);
+
+// Re-export drizzle helpers to ensure single-version types across workspace
+export { eq, and, sql } from "drizzle-orm";

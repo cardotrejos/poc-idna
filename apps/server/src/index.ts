@@ -12,6 +12,8 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { streamText, convertToModelMessages } from "ai";
 import { google } from "@ai-sdk/google";
+import { registerAssessmentUpload } from "./api/assessments/upload";
+import { registerAssessmentPreview } from "./api/assessments/preview";
 
 const app = new Hono();
 
@@ -27,6 +29,10 @@ app.use(
 );
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+
+// File upload endpoints
+registerAssessmentUpload(app);
+registerAssessmentPreview(app);
 
 export const apiHandler = new OpenAPIHandler(appRouter, {
 	plugins: [

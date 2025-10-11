@@ -8,6 +8,13 @@
       "when": 1760150938726,
       "tag": "0000_blue_songbird",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1760151275680,
+      "tag": "0001_old_shiver_man",
+      "breakpoints": true
     }
   ]
 }

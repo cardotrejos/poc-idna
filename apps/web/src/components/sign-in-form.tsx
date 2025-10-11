@@ -7,14 +7,30 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 
 export default function SignInForm({
-	onSwitchToSignUp,
+    onSwitchToSignUp,
 }: {
-	onSwitchToSignUp: () => void;
+    onSwitchToSignUp: () => void;
 }) {
-	const router = useRouter();
-	const { isPending } = authClient.useSession();
+    const router = useRouter();
+    const { isPending } = authClient.useSession();
+
+    const handleGoogleSignIn = useCallback(async () => {
+        try {
+            const callbackURL = `${window.location.origin}/dashboard`;
+            await authClient.signIn.social({
+                provider: "google",
+                callbackURL,
+            });
+            // If the client doesn’t hard-redirect, ensure navigation
+            // after successful sign-in.
+            router.push("/dashboard");
+        } catch (err: any) {
+            toast.error(err?.message || "Google sign-in failed");
+        }
+    }, [router]);
 
 	const form = useForm({
 		defaultValues: {
@@ -50,18 +66,32 @@ export default function SignInForm({
 		return <Loader />;
 	}
 
-	return (
-		<div className="mx-auto w-full mt-10 max-w-md p-6">
-			<h1 className="mb-6 text-center text-3xl font-bold">Welcome Back</h1>
+    return (
+        <div className="mx-auto w-full mt-10 max-w-md p-6">
+            <h1 className="mb-6 text-center text-3xl font-bold">Welcome Back</h1>
 
-			<form
-				onSubmit={(e) => {
-					e.preventDefault();
-					e.stopPropagation();
-					form.handleSubmit();
-				}}
-				className="space-y-4"
-			>
+            <div className="space-y-2">
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleGoogleSignIn}
+                    aria-label="Continue with Google"
+                >
+                    Continue with Google
+                </Button>
+            </div>
+
+            <div className="my-4 text-center text-sm text-muted-foreground">or</div>
+
+            <form
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    form.handleSubmit();
+                }}
+                className="space-y-4"
+            >
 				<div>
 					<form.Field name="email">
 						{(field) => (
