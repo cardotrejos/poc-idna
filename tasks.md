@@ -1,6 +1,20 @@
 # iDNA MVP Tasks Backlog (October 2025)
 
 Progress Log (newest first)
+- 2025-10-11 — Per-type uploads list on Assessment Hub
+  - Completed: shows last uploads (status badge, date) and a View action that opens a presigned URL
+  - Notes: capped to 5 entries per card; “View” uses signed URL endpoint with credentials
+
+Next Session Ideas
+- [ ] AH-UX-01 Show more/less toggle if a type has >5 uploads.
+- [ ] AH-UX-02 Allow students to delete their own uploads (with confirm + backend delete + R2 cleanup).
+- [ ] AH-UX-03 In-place per-file upload progress (progress bars) during batch upload.
+- 2025-10-11 — Multiple file selection per type
+  - Completed: multi-select + multi-drop, preview grid with remove buttons, batch upload
+  - Notes: uploads sent sequentially to maintain predictable server load
+- 2025-10-11 — Uploader preview before submission
+  - Completed: image/PDF preview with Upload/Clear buttons; accessible labels
+  - Notes: Preview uses object URLs and is revoked on clear/upload; preserves 10MB + type limits
 - 2025-10-11 — Per-type guidance on Assessment Hub
   - Completed: inline instructions block under each type; reads `fieldsJson.instructions` when present, otherwise shows default steps
   - Notes: Edit instructions via DB `assessment_types.fields_json.instructions`

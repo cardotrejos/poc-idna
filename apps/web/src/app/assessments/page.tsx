@@ -4,6 +4,7 @@ import Link from "next/link";
 import { orpc } from "@/utils/orpc";
 import { useQuery } from "@tanstack/react-query";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
+import { toast } from "sonner";
 
 function statusFromUploads(uploads: Array<{ typeSlug: string; status: string }>, slug: string) {
   const items = uploads.filter((u) => u.typeSlug === slug);
@@ -16,6 +17,18 @@ function statusFromUploads(uploads: Array<{ typeSlug: string; status: string }>,
 export default function AssessmentsPage() {
   const typesQ = useQuery(orpc.assessments.listTypes.queryOptions());
   const myUploadsQ = useQuery(orpc.studentAssessments.listMyUploads.queryOptions());
+  async function handleView(uploadId: number) {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/uploads/assessments/${uploadId}/url`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+      const { url } = await res.json();
+      if (url) window.open(url, "_blank", "noopener");
+    } catch (e: any) {
+      toast.error(e?.message || "Unable to open file");
+    }
+  }
 
   return (
     <div className="space-y-6 p-4">
@@ -63,6 +76,43 @@ export default function AssessmentsPage() {
                     myUploadsQ.refetch();
                   }}
                 />
+              </div>
+              <div className="mt-3">
+                <h3 className="text-sm font-medium">Your uploads</h3>
+                <ul className="mt-2 space-y-1">
+                  {(myUploadsQ.data?.filter((u) => u.typeSlug === t.slug) || []).slice(0, 5).map((u) => (
+                    <li key={u.id} className="flex items-center justify-between text-sm">
+                      <span className="truncate mr-2">#{u.id} — {new Date(u.submittedAt as any).toLocaleString()}</span>
+                      <span className="flex items-center gap-2">
+                        <span
+                          className={`text-xs px-2 py-0.5 border rounded ${
+                            u.status === "approved"
+                              ? "border-green-600 text-green-700"
+                              : u.status === "needs_review"
+                              ? "border-amber-600 text-amber-700"
+                              : u.status === "rejected"
+                              ? "border-red-600 text-red-700"
+                              : "border-gray-500 text-gray-600"
+                          }`}
+                          aria-label={`status ${u.status}`}
+                        >
+                          {u.status}
+                        </span>
+                        <button
+                          type="button"
+                          className="underline"
+                          onClick={() => handleView(u.id)}
+                          aria-label={`View upload ${u.id}`}
+                        >
+                          View
+                        </button>
+                      </span>
+                    </li>
+                  ))}
+                  {((myUploadsQ.data?.filter((u) => u.typeSlug === t.slug) || []).length === 0) && (
+                    <li className="text-sm text-gray-600">No uploads yet.</li>
+                  )}
+                </ul>
               </div>
             </section>
           );
