@@ -1,0 +1,29 @@
+name = "idna-ai-ingest-consumer"
+main = "src/index.ts"
+compatibility_date = "2024-10-01"
+
+# Queue consumer configuration
+[[queues.consumers]]
+# Replace with your actual queue name after creation
+queue = "idna-ai-ingest"
+max_batch_size = 10
+max_batch_timeout = 2 # seconds
+max_retries = 3
+
+[vars]
+# Your server origin that exposes /internal/ingest/:id
+# Example: https://api.idna.example.com
+INTERNAL_INGEST_BASE_URL = "https://your-server-origin"
+# When true, Worker performs edge-native inference (Stage 2)
+USE_EDGE_INGEST = "false"
+WORKERS_AI_MODEL = "@cf/llama-3.2-11b-vision-instruct"
+
+# Add secret at deploy time:
+# wrangler secret put INTERNAL_API_SECRET
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "idna-dev"
+
+[ai]
+binding = "AI"

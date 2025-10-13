@@ -17,6 +17,7 @@ import { registerAssessmentPreview } from "./api/assessments/preview";
 import { registerDocumentUpload } from "./api/documents/upload";
 import { registerDocumentPreview } from "./api/documents/preview";
 import { registerDocumentDelete } from "./api/documents/delete";
+import { registerInternalIngest } from "./api/internal/ingest";
 
 const app = new Hono();
 
@@ -39,6 +40,7 @@ registerAssessmentPreview(app);
 registerDocumentUpload(app);
 registerDocumentPreview(app);
 registerDocumentDelete(app);
+registerInternalIngest(app);
 
 export const apiHandler = new OpenAPIHandler(appRouter, {
 	plugins: [

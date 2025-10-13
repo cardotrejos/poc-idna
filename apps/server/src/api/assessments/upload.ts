@@ -6,6 +6,7 @@ import { assessmentTypes, assessmentUploads } from "@idna/db/schema/assessments"
 import { eq } from "@idna/db";
 import { assertCoachAssignedOrAdmin } from "@idna/api/guards";
 import { processUpload } from "../../jobs/ai_ingest";
+import { enqueueAIIngest, isAIIngestQueueConfigured } from "../../lib/queues";
 
 const MAX_BYTES = 10 * 1024 * 1024; // 10MB
 
@@ -76,12 +77,22 @@ export function registerAssessmentUpload(app: Hono) {
       })
       .returning({ id: assessmentUploads.id });
 
-    // Fire-and-forget AI ingestion (non-blocking)
+    // AI ingestion trigger
     const newId = inserted[0]?.id;
     if (newId) {
-      void processUpload(newId).catch((e) => {
-        console.error("AI ingest failed", e);
-      });
+      try {
+        if (isAIIngestQueueConfigured()) {
+          await enqueueAIIngest(newId);
+        } else {
+          // Fallback to inline processing in local/dev
+          void processUpload(newId).catch((e) => {
+            console.error("AI ingest failed (inline)", e);
+          });
+        }
+      } catch (e) {
+        console.error("Enqueue failed; falling back to inline", e);
+        void processUpload(newId).catch((err) => console.error("AI ingest failed (fallback)", err));
+      }
     }
 
     if (!newId) return c.json({ error: "Upload record not created" }, 500);
