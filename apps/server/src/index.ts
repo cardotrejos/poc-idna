@@ -21,11 +21,21 @@ import { registerInternalIngest } from "./api/internal/ingest";
 
 const app = new Hono();
 
+const allowedOrigins = (process.env.CORS_ORIGIN ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter((origin) => origin.length > 0);
+
 app.use(logger());
 app.use(
 	"/*",
 	cors({
-		origin: process.env.CORS_ORIGIN || "",
+		origin: (origin) => {
+			if (!origin) {
+				return allowedOrigins[0] ?? "";
+			}
+			return allowedOrigins.includes(origin) ? origin : "";
+		},
 		allowMethods: ["GET", "POST", "OPTIONS"],
 		allowHeaders: ["Content-Type", "Authorization"],
 		credentials: true,
