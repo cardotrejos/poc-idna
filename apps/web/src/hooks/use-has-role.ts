@@ -1,14 +1,28 @@
 "use client";
 
 import { authClient } from "@/lib/auth-client";
+import { useQuery } from "@tanstack/react-query";
+import { orpc } from "@/utils/orpc";
 
-type Role = "student" | "coach" | "admin";
+export type Role = "student" | "coach" | "admin";
 
 export function useHasRole(required: Role | Role[]) {
-  const { data } = authClient.useSession();
-  const role = (data?.user as any)?.role as Role | undefined;
+  const session = authClient.useSession();
+  const enabled = Boolean(session.data?.user);
+
+  // Fetch server-augmented session (includes role from DB) via oRPC
+  const q = useQuery({
+    ...orpc.privateData.queryOptions(),
+    enabled,
+    staleTime: 60_000,
+  });
+
+  const role = (q.data?.user as any)?.role as Role | undefined
+    ?? (session.data?.user as any)?.role as Role | undefined;
+
   const requiredRoles = Array.isArray(required) ? required : [required];
   const hasRole = role ? requiredRoles.includes(role) : false;
-  return { hasRole, role } as const;
-}
+  const isLoading = enabled && q.isLoading;
 
+  return { hasRole, role, isLoading } as const;
+}

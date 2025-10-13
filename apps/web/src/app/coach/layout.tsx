@@ -6,14 +6,16 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { ModeToggle } from "@/components/mode-toggle";
 import UserMenu from "@/components/user-menu";
 import Loader from "@/components/loader";
+import { useHasRole } from "@/hooks/use-has-role";
 
 export default function CoachLayout({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = authClient.useSession();
-  const role = (session?.user as any)?.role;
+  const { hasRole, isLoading } = useHasRole(["coach", "admin"]);
 
   if (isPending) return <Loader />;
   if (!session?.user) return <div className="p-6">Please sign in.</div>;
-  if (role !== "coach" && role !== "admin") return <div className="p-6">Access denied.</div>;
+  if (isLoading) return <Loader />;
+  if (!hasRole) return <div className="p-6">Access denied.</div>;
 
   const user = {
     name: session.user.name,
