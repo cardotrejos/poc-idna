@@ -22,9 +22,11 @@ import { registerInternalIngest } from "./api/internal/ingest";
 const app = new Hono();
 
 const allowedOrigins = (process.env.CORS_ORIGIN ?? "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter((origin) => origin.length > 0);
+	.split(",")
+	.map((origin) => origin.trim())
+	.filter((origin) => origin.length > 0);
+
+console.log("[server] CORS allowed origins:", allowedOrigins);
 
 app.use(logger());
 app.use(
