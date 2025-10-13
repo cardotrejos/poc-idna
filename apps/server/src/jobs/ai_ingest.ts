@@ -65,7 +65,7 @@ export async function processUpload(uploadId: number): Promise<
     }
     let finalResults: Record<string, unknown> = {}
     let finalConfidence = 0
-    let finalProvider: ProviderId = chain[0]
+    let finalProvider: ProviderId = chain[0]!
     let finalModel: string | undefined
 
     const callLogs: Array<{
