@@ -33,6 +33,7 @@
     "dev:native": "turbo -F native dev",
     "dev:web": "turbo -F web dev",
     "dev:server": "turbo -F server dev",
+    "dev:server:start": "turbo -F server start",
     "db:push": "turbo -F @idna/db db:push",
     "db:studio": "turbo -F @idna/db db:studio",
     "db:generate": "turbo -F @idna/db db:generate",
