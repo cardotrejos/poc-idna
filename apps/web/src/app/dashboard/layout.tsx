@@ -1,29 +1,41 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/mode-toggle";
 import UserMenu from "@/components/user-menu";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import Loader from "@/components/loader";
 import { authClient } from "@/lib/auth-client";
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Server-side session check (via API, not local DB)
-  const h = await headers();
-  const session = await authClient.getSession({
-    fetchOptions: { headers: Object.fromEntries(h.entries()) },
-  });
-  if (!session.data) {
-    redirect("/login");
+  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
+
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.push("/login");
+    }
+  }, [isPending, session, router]);
+
+  if (isPending) {
+    return <Loader />;
+  }
+
+  if (!session) {
+    // Redirect in effect; avoid rendering layout content
+    return null;
   }
 
   const user = {
-    name: session.data.user.name,
-    email: session.data.user.email,
-    image: (session.data.user as any).image as string | undefined,
+    name: session.user.name,
+    email: session.user.email,
+    image: (session.user as any).image as string | undefined,
   };
 
   return (
