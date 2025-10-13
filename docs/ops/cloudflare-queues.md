@@ -42,11 +42,11 @@ Notes
 - Observability: use `wrangler tail` for Worker logs, and server logs on Railway. Queues provides DLQ options; enable if needed.
 - Future: migrate ingest into the Worker (read from R2 and use Workers AI) or wrap the steps in Cloudflare Workflows. No API contract changes required.
 
-Stage 2: Edge-native inference (optional)
+Stage 2: Edge-native inference (optional; not recommended for now)
 - Enable R2 and AI bindings in `apps/worker-ai-ingest/wrangler.toml` (already scaffolded):
   - `[[r2_buckets]] binding = "R2"` with `bucket_name` matching your R2 bucket
   - `[ai] binding = "AI"`
-- Set Worker vars:
+- Set Worker vars (only if you choose edge inference):
   - `USE_EDGE_INGEST=true`
   - `WORKERS_AI_MODEL=@cf/llama-3.2-11b-vision-instruct` (or your preferred model)
 - Worker flow:
@@ -55,3 +55,11 @@ Stage 2: Edge-native inference (optional)
   3) `env.AI.run(model, { messages: [...] })` to produce JSON text
   4) POST `/internal/ingest/complete` with `{ uploadId, typeId, typeSlug, rawText }`
 - Server validates against the known Zod schema and persists results, mirroring `processUpload`.
+
+Top LLMs on server (preferred)
+- Keep `USE_EDGE_INGEST=false`.
+- Choose provider via `AI_PROVIDER=google|openai|anthropic` and set respective API key envs.
+- Models:
+  - Google: `gemini-2.5-flash` (default)
+  - OpenAI: `gpt-4o-mini` (default; override with `OPENAI_VISION_MODEL`)
+  - Anthropic: `claude-3-5-sonnet-2024-06-20` (default; override with `ANTHROPIC_VISION_MODEL`)

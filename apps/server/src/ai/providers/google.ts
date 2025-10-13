@@ -42,7 +42,19 @@ export const googleExtractor: AssessmentExtractor = {
       }
 
       const confidence = parsed && Object.keys(parsed).length > 0 ? 70 : 0;
-      return { results: parsed || {}, confidencePct: confidence };
+      const out: ExtractedResult = {
+        results: parsed || {},
+        confidencePct: confidence,
+        model: "gemini-2.5-flash",
+      };
+      const usage: any = (res as any).usage;
+      if (usage) {
+        out.usage = {
+          promptTokens: usage.promptTokens ?? usage.inputTokens,
+          completionTokens: usage.completionTokens ?? usage.outputTokens,
+        };
+      }
+      return out;
     } catch {
       return { results: {}, confidencePct: 0 };
     }

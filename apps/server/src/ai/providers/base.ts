@@ -1,6 +1,10 @@
 export type ExtractedResult = {
-  results: Record<string, unknown>;
-  confidencePct: number; // 0..100
+  results: Record<string, unknown>
+  confidencePct: number // 0..100
+  /** Optional token usage if provided by the model */
+  usage?: { promptTokens?: number; completionTokens?: number }
+  /** Optional model identifier used */
+  model?: string
 };
 
 export interface AssessmentExtractor {
@@ -10,4 +14,3 @@ export interface AssessmentExtractor {
     typeSlug: string;
   }): Promise<ExtractedResult>;
 }
-

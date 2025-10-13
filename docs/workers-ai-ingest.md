@@ -5,11 +5,11 @@ Overview
 - Platform: Cloudflare Queues + a consumer Worker. Optionally, the Worker can perform inference using Workers AI and read bytes directly from R2 (Stage 2).
 
 Architecture
-- Stage 1 (default):
+- Stage 1 (default and recommended):
   1) Server enqueues `{ uploadId }` to Cloudflare Queues.
   2) Worker consumes messages and calls `POST /internal/ingest/:id` on the server with `X-Internal-Secret`.
-  3) Server runs existing `processUpload(id)` using current provider (Google by default) and persists results.
-- Stage 2 (opt-in):
+  3) Server runs `processUpload(id)` using the selected top LLM provider (Google/OpenAI/Anthropic) and persists results.
+- Stage 2 (opt-in; currently disabled):
   1) Worker GETs `/internal/ingest/meta/:id` to obtain `{ storageKey, mime, typeSlug, typeId }`.
   2) Worker reads bytes from `env.R2` and calls `env.AI.run(model, messages=[image + prompt])`.
   3) Worker POSTs `/internal/ingest/complete` to let the server validate against Zod schema and persist results + usage.
@@ -31,7 +31,8 @@ Environment
 - Worker (Cloudflare):
   - `INTERNAL_INGEST_BASE_URL` (server origin)
   - `INTERNAL_API_SECRET` (secret; must match server)
-  - Stage 2 only: `USE_EDGE_INGEST=true`, `WORKERS_AI_MODEL=@cf/llama-3.2-11b-vision-instruct`, R2 and AI bindings enabled in wrangler.toml
+  - To use OpenAI/Anthropic: set `AI_PROVIDER=openai|anthropic` and the matching API key (`OPENAI_API_KEY` or `ANTHROPIC_API_KEY`). Optional: `OPENAI_VISION_MODEL`, `ANTHROPIC_VISION_MODEL`.
+  - Stage 2 (not recommended now): `USE_EDGE_INGEST=true`, `WORKERS_AI_MODEL=@cf/...`, plus R2 and AI bindings in wrangler.
 
 Deploy Quickstart
 1) Create queue: `wrangler queues create idna-ai-ingest`
@@ -50,4 +51,3 @@ Notes/Tradeoffs
 - Cloudflare Queues avoids running Redis/BullMQ and sits close to R2.
 - Stage 1 minimizes risk (reuses server provider + logic). Stage 2 moves compute to edge but keeps server as source of truth.
 - Both stages preserve a single persistence path: server validates with Zod and writes to DB.
-

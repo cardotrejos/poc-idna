@@ -25,20 +25,37 @@ export async function processUpload(uploadId: number) {
 
     // Choose provider
     const provider = (process.env.AI_PROVIDER || "google").toLowerCase();
+    let model: string | undefined
 
     let results: Record<string, unknown> = {};
     let confidencePct = 0;
     let usage: { promptTokens?: number; completionTokens?: number } | undefined;
 
     if (provider === "google") {
-      const { googleExtractor } = await import("../ai/providers/google");
-      const out = await googleExtractor.extract({ bytes, mimeType: upload.mime, typeSlug: type.slug });
-      results = out.results;
-      confidencePct = out.confidencePct;
+      const { googleExtractor } = await import("../ai/providers/google")
+      const out = await googleExtractor.extract({ bytes, mimeType: upload.mime, typeSlug: type.slug })
+      results = out.results
+      confidencePct = out.confidencePct
+      usage = out.usage
+      model = out.model || "gemini-2.5-flash"
+    } else if (provider === "openai") {
+      const { openAIExtractor } = await import("../ai/providers/openai")
+      const out = await openAIExtractor.extract({ bytes, mimeType: upload.mime, typeSlug: type.slug })
+      results = out.results
+      confidencePct = out.confidencePct
+      usage = out.usage
+      model = out.model || process.env.OPENAI_VISION_MODEL || "gpt-4o-mini"
+    } else if (provider === "anthropic") {
+      const { anthropicExtractor } = await import("../ai/providers/anthropic")
+      const out = await anthropicExtractor.extract({ bytes, mimeType: upload.mime, typeSlug: type.slug })
+      results = out.results
+      confidencePct = out.confidencePct
+      usage = out.usage
+      model = out.model || process.env.ANTHROPIC_VISION_MODEL || "claude-3-5-sonnet-2024-06-20"
     } else {
       // Fallback: no provider configured
-      results = {};
-      confidencePct = 0;
+      results = {}
+      confidencePct = 0
     }
 
     // Persist results and usage
@@ -61,7 +78,7 @@ export async function processUpload(uploadId: number) {
       await db.insert(aiCalls).values({
         uploadId: upload.id,
         provider,
-        model: "gemini-2.5-flash",
+        model: model || "",
         tokensIn: usage.promptTokens || 0,
         tokensOut: usage.completionTokens || 0,
         costMinorUnits: 0,
@@ -77,7 +94,7 @@ export async function processUpload(uploadId: number) {
     await db.insert(aiCalls).values({
       uploadId: upload.id,
       provider: process.env.AI_PROVIDER || "google",
-      model: "gemini-2.5-flash",
+      model: model || "",
       tokensIn: 0,
       tokensOut: 0,
       costMinorUnits: 0,
