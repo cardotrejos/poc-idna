@@ -4,10 +4,15 @@ import { headers } from "next/headers";
 import { authClient } from "@/lib/auth-client";
 import { JourneyDashboardShell } from "@/components/journey/JourneyDashboardShell";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const h = await headers();
   const session = await authClient.getSession({
-    fetchOptions: { headers: Object.fromEntries(h.entries()) },
+    fetchOptions: {
+      headers: Object.fromEntries(h.entries()),
+      cache: "no-store",
+    },
   });
 
   if (!session.data) {

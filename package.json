@@ -45,6 +45,7 @@
     "db:down": "turbo -F @idna/db db:down"
   },
   "dependencies": {
+    "alchemy": "latest",
     "dotenv": "^17.2.2",
     "zod": "^4.1.11"
   },

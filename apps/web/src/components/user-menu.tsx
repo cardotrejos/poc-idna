@@ -13,6 +13,7 @@ import { Button } from "./ui/button";
 import { Skeleton } from "./ui/skeleton";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function UserMenu() {
 	const router = useRouter();
@@ -44,13 +45,16 @@ export default function UserMenu() {
 						variant="destructive"
 						className="w-full"
 						onClick={() => {
-							authClient.signOut({
-								fetchOptions: {
-									onSuccess: () => {
-										router.push("/");
-									},
-								},
-							});
+						authClient.signOut(undefined, {
+							onSuccess: () => {
+								router.push("/");
+								router.refresh();
+								toast.success("Signed out");
+							},
+							onError: (error) => {
+								toast.error(error.error.message || error.error.statusText);
+							},
+						});
 						}}
 					>
 						Sign Out
@@ -60,4 +64,3 @@ export default function UserMenu() {
 		</DropdownMenu>
 	);
 }
-
