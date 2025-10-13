@@ -39,7 +39,7 @@ Provisioning (once)
 
 Notes
 - Concurrency & retries are configured in wrangler.toml [[queues.consumers]].
-- Observability: use `wrangler tail` for Worker logs, and server logs on Railway. Queues provides DLQ options; enable if needed.
+- Observability: use `wrangler tail` for Worker logs, and server logs on Railway. DLQ is enabled via Alchemy (idna-ai-ingest-dlq) with a dedicated alert worker.
 - Future: migrate ingest into the Worker (read from R2 and use Workers AI) or wrap the steps in Cloudflare Workflows. No API contract changes required.
 
 Stage 2: Edge-native inference (optional; not recommended for now)
@@ -66,3 +66,7 @@ Top LLMs on server (preferred)
   - Google: `gemini-2.5-flash` (default)
   - OpenAI: `gpt-4o-mini` (default; override with `OPENAI_VISION_MODEL`)
   - Anthropic: `claude-3-5-sonnet-2024-06-20` (default; override with `ANTHROPIC_VISION_MODEL`)
+
+Dead-letter queue and alerts
+- The Alchemy script provisions a DLQ (`idna-ai-ingest-dlq`) and a DLQ consumer worker that posts to `SLACK_WEBHOOK_URL` if set.
+- Set `SLACK_WEBHOOK_URL` before `bun run infra:up` to enable Slack alerts.

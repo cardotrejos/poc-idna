@@ -33,6 +33,8 @@ Environment
   - `INTERNAL_API_SECRET` (secret; must match server)
   - To use OpenAI/Anthropic: set `AI_PROVIDER=openai|anthropic` and the matching API key (`OPENAI_API_KEY` or `ANTHROPIC_API_KEY`). Optional: `OPENAI_VISION_MODEL`, `ANTHROPIC_VISION_MODEL`.
   - Stage 2 (not recommended now): `USE_EDGE_INGEST=true`, `WORKERS_AI_MODEL=@cf/...`, plus R2 and AI bindings in wrangler.
+  - Confidence fallback: `AI_CONFIDENCE_MIN=60` (default). Optional `AI_PROVIDER_CHAIN` e.g. `openai,anthropic,google` to try in order until confidence ≥ min.
+  - Requeue on low confidence: `AI_REQUEUE_ON_LOW_CONFIDENCE=true` (server endpoint will return 503 → message retried; after max retries it goes to DLQ).
 
 Deploy Quickstart
 1) Create queue: `wrangler queues create idna-ai-ingest`

@@ -1,6 +1,6 @@
 /// <reference types="@types/node" />
 import alchemy from "alchemy"
-import { Queue, Worker, R2Bucket, QueueConsumer } from "alchemy/cloudflare"
+import { Queue, Worker, R2Bucket } from "alchemy/cloudflare"
 
 // Alchemy app scope
 const app = await alchemy("idna-infra", {
@@ -28,6 +28,12 @@ export const aiIngestQueue = await Queue<{ uploadId: number }>("ai-ingest", {
   adopt: true,
 })
 
+// Dead-letter queue
+export const aiIngestDLQ = await Queue("ai-ingest-dlq", {
+  name: process.env.CF_AI_INGEST_DLQ_NAME || "idna-ai-ingest-dlq",
+  adopt: true,
+})
+
 // Worker consumer that processes batches from the queue
 export const aiIngestWorker = await Worker("ai-ingest-consumer", {
   name: process.env.CF_AI_INGEST_CONSUMER_NAME || "idna-ai-ingest-consumer",
@@ -52,30 +58,42 @@ export const aiIngestWorker = await Worker("ai-ingest-consumer", {
         batchSize: Number(process.env.CF_AI_INGEST_BATCH_SIZE || 10),
         maxRetries: Number(process.env.CF_AI_INGEST_MAX_RETRIES || 3),
         maxWaitTimeMs: Number(process.env.CF_AI_INGEST_MAX_WAIT_MS || 2000),
-        // deadLetterQueue: "idna-ai-ingest-dlq" // optional: add a DLQ later
+        deadLetterQueue: aiIngestDLQ,
       },
     },
   ],
   adopt: true,
 })
 
-// Optional: if you prefer an explicit consumer resource (alternative to eventSources)
-await QueueConsumer("ai-ingest-consumer-binding", {
-  queue: aiIngestQueue,
-  scriptName: aiIngestWorker.name,
-  settings: {
-    batchSize: Number(process.env.CF_AI_INGEST_BATCH_SIZE || 10),
-    maxRetries: Number(process.env.CF_AI_INGEST_MAX_RETRIES || 3),
-    maxWaitTimeMs: Number(process.env.CF_AI_INGEST_MAX_WAIT_MS || 2000),
+// DLQ consumer for alerts
+export const aiIngestDlqWorker = await Worker("ai-ingest-dlq-consumer", {
+  name: process.env.CF_AI_INGEST_DLQ_CONSUMER_NAME || "idna-ai-ingest-dlq-consumer",
+  entrypoint: "./apps/worker-ai-ingest/src/dlq.ts",
+  bindings: {
+    SLACK_WEBHOOK_URL: process.env.SLACK_WEBHOOK_URL
+      ? alchemy.secret(process.env.SLACK_WEBHOOK_URL)
+      : undefined,
   },
+  eventSources: [
+    {
+      queue: aiIngestDLQ,
+      settings: {
+        batchSize: 10,
+        maxRetries: 1,
+        maxWaitTimeMs: 2000,
+      },
+    },
+  ],
+  adopt: true,
 })
 
 console.log({
   queue: aiIngestQueue.name,
+  dlq: aiIngestDLQ.name,
   worker: aiIngestWorker.name,
+  dlqWorker: aiIngestDlqWorker.name,
   // @ts-ignore
   url: (aiIngestWorker as any).url,
 })
 
 await app.finalize()
-

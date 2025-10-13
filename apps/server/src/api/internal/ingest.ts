@@ -20,8 +20,16 @@ export function registerInternalIngest(app: Hono) {
     }
 
     try {
-      const resultId = await processUpload(id)
-      return c.json({ ok: true, resultId })
+      const out = await processUpload(id)
+      if (!out) return c.json({ error: "NOT_FOUND" }, 404)
+      const min = Number(process.env.AI_CONFIDENCE_MIN || 60)
+      const requeueOnLow = String(process.env.AI_REQUEUE_ON_LOW_CONFIDENCE || "").toLowerCase()
+      const shouldRequeue = (requeueOnLow === "1" || requeueOnLow === "true") && out.confidencePct < min
+      if (shouldRequeue) {
+        // Signal queue to retry by returning non-2xx
+        return c.json({ requeue: true, confidencePct: out.confidencePct, threshold: min }, 503)
+      }
+      return c.json({ ok: true, resultId: out.resultId, confidencePct: out.confidencePct, provider: out.provider, model: out.model })
     } catch (err) {
       console.error("processUpload failed", err)
       return c.json({ error: "INGEST_FAILED" }, 500)
