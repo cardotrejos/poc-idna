@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, Bot, LogOut, FileText, FolderOpen } from "lucide-react";
+import { LayoutDashboard, Bot, LogOut, FileText, FolderOpen, Shield, Users } from "lucide-react";
 import Link from "next/link";
 import {
   Sidebar,
@@ -19,6 +19,7 @@ import { usePathname } from "next/navigation";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { authClient } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useHasRole } from "@/hooks/use-has-role";
 
 import type { Route } from "next";
 
@@ -37,6 +38,8 @@ export function AppSidebar({
   organization?: { name: string; logo?: string | null } | null;
 }) {
   const pathname = usePathname();
+  const { hasRole: isAdmin } = useHasRole("admin");
+  const { hasRole: isCoach } = useHasRole("coach");
 
   const initials = user.name
     .split(" ")
@@ -72,6 +75,47 @@ export function AppSidebar({
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Staff sections: show when user has matching role */}
+        {(isCoach || isAdmin) && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Staff</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {isCoach && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname === "/coach/students" || pathname.startsWith("/coach/students/")}>
+                      <Link href={"/coach/students" as Route}>
+                        <Users className="h-4 w-4" />
+                        <span>Coach • Students</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {isAdmin && (
+                  <>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={pathname === "/admin/assessments" || pathname.startsWith("/admin/assessments/")}>
+                        <Link href={"/admin/assessments" as Route}>
+                          <Shield className="h-4 w-4" />
+                          <span>Admin • Assessments</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={pathname === "/admin/students" || pathname.startsWith("/admin/students/")}>
+                        <Link href={"/admin/students" as Route}>
+                          <Users className="h-4 w-4" />
+                          <span>Admin • Students</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </>
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter>
         <DropdownMenu>
