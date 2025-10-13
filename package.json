@@ -26,6 +26,8 @@
     "check": "biome check --write .",
     "ruler:apply": "bunx @intellectronica/ruler@latest apply --local-only",
     "dev": "turbo dev",
+    "infra:up": "bun ./alchemy.run.ts",
+    "infra:destroy": "bun ./alchemy.run.ts --destroy",
     "build": "turbo build",
     "check-types": "turbo check-types",
     "dev:native": "turbo -F native dev",
