@@ -26,6 +26,5 @@ Usage
 Notes
 - The Worker uses our existing source: `apps/worker-ai-ingest/src/index.ts`.
 - Stage 1 requires only R2 + internal URL/secret bindings.
-- Stage 2 (Workers AI) currently uses wrangler.toml to add the `[ai]` binding. You can keep wrangler for AI until Alchemy exposes a first-class Workers AI binding; the Worker code defaults to `USE_EDGE_INGEST=false`.
+- Stage 2 (Workers AI) would require adding an `[ai]` binding in wrangler.toml. We intentionally omit it by default; keep `USE_EDGE_INGEST=false`.
 - Alchemy resources are created with `adopt: true`, so it can take control of existing queue/bucket/worker if you already provisioned them.
-

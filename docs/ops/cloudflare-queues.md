@@ -43,9 +43,12 @@ Notes
 - Future: migrate ingest into the Worker (read from R2 and use Workers AI) or wrap the steps in Cloudflare Workflows. No API contract changes required.
 
 Stage 2: Edge-native inference (optional; not recommended for now)
-- Enable R2 and AI bindings in `apps/worker-ai-ingest/wrangler.toml` (already scaffolded):
+- Enable R2 binding in `apps/worker-ai-ingest/wrangler.toml` if you choose edge inference:
   - `[[r2_buckets]] binding = "R2"` with `bucket_name` matching your R2 bucket
-  - `[ai] binding = "AI"`
+  - Workers AI `[ai]` binding is intentionally not present by default. If you later opt into edge inference, add:
+    
+    [ai]
+    binding = "AI"
 - Set Worker vars (only if you choose edge inference):
   - `USE_EDGE_INGEST=true`
   - `WORKERS_AI_MODEL=@cf/llama-3.2-11b-vision-instruct` (or your preferred model)

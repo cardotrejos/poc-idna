@@ -24,6 +24,3 @@ WORKERS_AI_MODEL = "@cf/llama-3.2-11b-vision-instruct"
 [[r2_buckets]]
 binding = "R2"
 bucket_name = "idna-dev"
-
-[ai]
-binding = "AI"
