@@ -9,8 +9,8 @@ import { useHasRole } from "@/hooks/use-has-role";
 export default function Header() {
     const pathname = usePathname();
 
-    // Hide global header on dashboard pages (dashboard has its own top bar)
-    if (pathname.startsWith("/dashboard")) return null;
+    // Hide global header on dashboard/admin/coach pages (these have their own top bar)
+    if (pathname.startsWith("/dashboard") || pathname.startsWith("/admin") || pathname.startsWith("/coach")) return null;
 
     const { hasRole: isAdmin } = useHasRole("admin");
     const { hasRole: isCoach } = useHasRole("coach");
