@@ -1,6 +1,13 @@
 # iDNA MVP Tasks Backlog (October 2025)
 
 Progress Log (newest first)
+- 2025-10-13 — Background ingest workerization + provider fallbacks + IaC
+  - Completed: AI-03 Ingest job worker — moved to Cloudflare Queues with a consumer Worker that calls secured server endpoint; inline fallback in dev.
+  - Completed: API-06 AI processing trigger — upload now enqueues job when CF env present; otherwise runs inline.
+  - Completed: AI-04 Confidence & fallback — added `AI_CONFIDENCE_MIN` threshold, optional `AI_PROVIDER_CHAIN` (google|openai|anthropic) and optional requeue-on-low-confidence; best result kept, uploads remain `needs_review` for staff.
+  - Completed: OPS — IaC script via Alchemy to provision Queue + DLQ + consumer + DLQ alert worker; docs added (ops/cloudflare-queues.md, ops/alchemy.md, workers-ai-ingest.md).
+  - Completed: DLQ + Alerts — DLQ worker posts to Slack if `SLACK_WEBHOOK_URL` set.
+  - Notes: AI-05 usage tracking is partially done (tokens/model recorded per call); admin summary endpoint still pending.
 - 2025-10-13 — Admin review refactor + Admin Students URL state + Stories autosave
   - Completed: AR-05 Admin assessment detail page refactor — removed fetch-in-useEffect; now uses TanStack Query for detail and preview; added targeted invalidation and toasts.
   - Completed: Admin Students filters in URL using nuqs (`q`, `page`) with type-safe parsers; back/forward and shareable state.
@@ -197,7 +204,7 @@ Notes & Assumptions
   - DoD: GET `/uploads/assessments/:id/url` returns presigned URL; access limited to self, assigned coach, or admin.
   - Paths: `apps/server/src/api/assessments/preview.ts`.
 
-- [ ] API-06 AI processing trigger (S)
+- [x] API-06 AI processing trigger (S)
   - DoD: On successful upload, enqueue background job (or call inline in dev) to start AI extraction; idempotent.
   - Paths: `apps/server/src/api/assessments/upload.ts`, `apps/server/src/jobs/ai_ingest.ts`.
 
@@ -221,13 +228,13 @@ Notes & Assumptions
   - DoD: JSON schemas per assessment (e.g., 16Personalities, Big Five, DISC); system prompts/instructions to produce strict JSON; unit tests against sample images.
   - Paths: `apps/server/src/ai/schemas/*`, `apps/server/test/ai/*`.
 
-- [ ] AI-03 Ingest job worker (M)
-  - DoD: Job reads `assessment_uploads` with `uploaded` status, downloads file, calls provider, validates JSON, writes `assessment_results`, updates status `needs_review`.
-  - Paths: `apps/server/src/jobs/ai_ingest.ts`.
+- [x] AI-03 Ingest job worker (M)
+  - DoD: Background worker (Cloudflare Queue consumer) triggers server-side `processUpload(id)`; downloads bytes from R2, calls provider, validates JSON, writes `assessment_results`, updates status `needs_review`.
+  - Paths: `apps/worker-ai-ingest/src/index.ts`, `apps/server/src/api/internal/ingest.ts`, `apps/server/src/jobs/ai_ingest.ts`.
 
-- [ ] AI-04 Confidence & fallback (S)
-  - DoD: If confidence < threshold or schema invalid → remain `needs_review`; else mark `needs_review` with low‑confidence flag for staff.
-  - Paths: `apps/server/src/ai/normalize.ts`.
+- [x] AI-04 Confidence & fallback (S)
+  - DoD: If confidence < threshold → remain `needs_review`; try provider chain until threshold met; record usage/model. (Normalization file not needed; logic integrated in `processUpload`.)
+  - Paths: `apps/server/src/jobs/ai_ingest.ts`.
 
 - [ ] AI-05 Cost & usage tracking (S)
   - DoD: Record tokens/cost in `ai_calls`; daily/weekly summary endpoint for admins.
@@ -322,9 +329,9 @@ Notes & Assumptions
   - DoD: Deploy `apps/server` (e.g., AWS Elastic Beanstalk or similar); healthcheck; logs streaming; autoscale min=1.
   - Paths: `apps/server/Dockerfile` or EB config.
 
-- [ ] OPS-03 Worker process (S)
-  - DoD: Separate process for `ai_ingest` job (EB worker or PM2); documented start command.
-  - Paths: `apps/server/package.json` scripts, Procfile.
+- [x] OPS-03 Worker process (S)
+  - DoD: Separate background processor. Implemented via Cloudflare Queues + Worker consumer (with DLQ); IaC provided with Alchemy.
+  - Paths: `apps/worker-ai-ingest/*`, `alchemy.run.ts`, docs in `docs/ops/*`.
 
 - [ ] OPS-04 Secrets management (S)
   - DoD: All secrets from env store; no secrets in repo; rotation notes in README.
