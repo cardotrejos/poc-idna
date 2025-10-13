@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { orpc } from "@/utils/orpc";
+import { orpc, queryClient } from "@/utils/orpc";
 import { useQuery } from "@tanstack/react-query";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ function statusFromUploads(uploads: Array<{ typeSlug: string; status: string }>,
 export default function AssessmentsPage() {
   const typesQ = useQuery(orpc.assessments.listTypes.queryOptions());
   const myUploadsQ = useQuery(orpc.studentAssessments.listMyUploads.queryOptions());
+
   async function handleView(uploadId: number) {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/uploads/assessments/${uploadId}/url`, {
@@ -31,7 +32,7 @@ export default function AssessmentsPage() {
   }
 
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-semibold">Assessments</h1>
         <p className="text-gray-600">Complete the assessments below on their external sites, then upload a screenshot or PDF of your result.</p>
@@ -49,9 +50,9 @@ export default function AssessmentsPage() {
               {t.required && <div className="text-xs text-red-700 mt-1">Required</div>}
               {t.providerUrl && (
                 <div className="mt-2">
-                  <Link href={t.providerUrl} target="_blank" rel="noopener" className="underline">
+                  <a href={t.providerUrl} target="_blank" rel="noopener" className="underline">
                     Open assessment site
-                  </Link>
+                  </a>
                 </div>
               )}
               <div className="mt-3">
@@ -74,6 +75,7 @@ export default function AssessmentsPage() {
                   typeSlug={t.slug}
                   onUploaded={() => {
                     myUploadsQ.refetch();
+                    queryClient.invalidateQueries({ queryKey: orpc.progress.getMy.queryKey() });
                   }}
                 />
               </div>

@@ -1,5 +1,5 @@
 import { protectedProcedure } from "../index";
-import { db, eq } from "@idna/db";
+import { db, eq, and } from "@idna/db";
 import { assessmentUploads, assessmentResults, assessmentTypes } from "@idna/db/schema/assessments";
 
 export const studentAssessmentsRouter = {
@@ -18,8 +18,12 @@ export const studentAssessmentsRouter = {
       .from(assessmentUploads)
       .innerJoin(assessmentTypes, eq(assessmentTypes.id as any, assessmentUploads.typeId) as any)
       .leftJoin(assessmentResults, eq(assessmentResults.uploadId as any, assessmentUploads.id) as any)
-      .where(eq(assessmentUploads.studentUserId as any, userId) as any)
-      .where(eq(assessmentUploads.status as any, "approved") as any);
+      .where(
+        and(
+          eq(assessmentUploads.studentUserId as any, userId) as any,
+          eq(assessmentUploads.status as any, "approved") as any,
+        ) as any,
+      );
 
     return rows;
   }),

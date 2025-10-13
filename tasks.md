@@ -1,6 +1,32 @@
 # iDNA MVP Tasks Backlog (October 2025)
 
 Progress Log (newest first)
+- 2025-10-13 — Journey dashboard + Stories + Progress API + TS fixes
+  - Completed: UI-01 Journey dashboard shell (progress ring, 5-step tracker, CTA cards)
+  - Completed: API-02 Life stories CRUD (list/create/update/delete with ownership checks)
+  - Completed: INT-02 Replace mocks on journey — dashboard wired to real progress (orpc.progress.getMy) with invalidation on uploads/stories
+  - Completed: /stories page (basic) — prompt selector, textarea editor, list with timestamps and delete
+  - Completed: TypeScript errors resolved in Admin pages and API routers (admin assessments/students)
+  - Notes: UI-03 Life story editor still needs rich text and autosave to meet full DoD
+- 2025-10-11 — Auth parity, Documents + Assessments, R2 fixed, seed users
+  - Completed: Auth redirect parity with schedule-agent (login/dashboard), header/sidebar cleanup
+  - Completed: Removed Todos (UI + API) and dropped DB table via migration 0002_drop_todo
+  - Completed: Documents E2E — uploader, lists (student/admin/coach), view + delete, sidebar link
+  - Completed: Assessments hub — types seeded (16Personalities, RIASEC, Keirsey, StrengthsProfile, HEXACO), upload, view, per-type status
+  - Completed: Coach/Admin pages (students list, student documents); header links for roles
+  - Completed: R2 upload 403 resolved (token scope); storage adapter supports virtual-host style; added diagnostics
+  - Completed: Seed admin/coach users (cardotrejos+1, cardotrejos+2)
+  - Notes: Documents delete is hard-delete (DB + R2). Soft-delete can be added later if needed
+- 2025-10-11 — Removed Todos; added Assessments hub to sidebar
+  - Completed: removed /todos route and API router binding; sidebar now links to /dashboard/assessments
+  - Completed: Assessments page shows types, per-type uploads, and opens signed preview URLs
+  - Notes: student results still render on the Dashboard via AssessmentList; API todo router file kept but unused
+- 2025-10-11 — Documents upload + listings
+  - Completed: DocumentUploader component (drag/drop JPG/PNG/PDF), category select
+  - Completed: API routes /uploads/documents (upload) and /uploads/documents/:id/url (signed preview)
+  - Completed: orpc.documents.{listMy,listForStudent}; My Documents page at /dashboard/documents
+  - Completed: Admin/Coach student docs view at /admin/students/[id]/documents
+  - Notes: status shown as "uploaded" (no review flow yet)
 - 2025-10-11 — Per-type uploads list on Assessment Hub
   - Completed: shows last uploads (status badge, date) and a View action that opens a presigned URL
   - Notes: capped to 5 entries per card; “View” uses signed URL endpoint with credentials
@@ -146,15 +172,15 @@ Notes & Assumptions
   - DoD: Expose session and role in oRPC context; health route green.
   - Paths: `packages/api/src/context.ts`, `packages/api/src/index.ts`.
 
-- [ ] API-02 Life stories CRUD (S)
+- [x] API-02 Life stories CRUD (S)
   - DoD: `list/create/update/delete` with validation; ownership checks; returns paginated results.
   - Paths: `packages/api/src/routers/stories.ts`, server binding in `apps/server/src/api/`.
 
-- [ ] API-03 Documents list & delete (S)
+- [x] API-03 Documents list & delete (S)
   - DoD: List metadata; soft delete; signed URL generation for view.
   - Paths: `packages/api/src/routers/documents.ts`.
 
-- [ ] API-04 Assessments catalogue (S)
+- [x] API-04 Assessments catalogue (S)
   - DoD: List assessment types; mark required/optional; link to provider_url.
   - Paths: `packages/api/src/routers/assessments.ts`.
 
@@ -174,9 +200,9 @@ Notes & Assumptions
   - DoD: Endpoint to fetch results for a student; include status + confidence.
   - Paths: `packages/api/src/routers/assessmentResults.ts`.
 
-- [ ] API-08 Coach roster (S)
+- [x] API-08 Coach roster (S)
   - DoD: List students assigned to coach; simple pagination and search.
-  - Paths: `packages/api/src/routers/coach.ts`.
+  - Paths: `packages/api/src/routers/coachStudents.ts`, `packages/api/src/routers/adminStudents.ts`.
 
 ---
 
@@ -230,21 +256,22 @@ Notes & Assumptions
 
 ## Student UI
 
-- [ ] UI-01 Journey dashboard shell (M)
+- [x] UI-01 Journey dashboard shell (M)
   - DoD: 5‑step tracker, completion ring, CTA cards with sample data; responsive on tablet/desktop; a11y complete.
   - Paths: `apps/web/src/app/dashboard/page.tsx`, `apps/web/src/components/journey/*`.
 
-- [ ] UI-02 Assessment hub (M)
+- [x] UI-02 Assessment hub (M)
   - DoD: List assessment types, external links, instructions modal per card, upload button with status chips.
-  - Paths: `apps/web/src/app/assessments/page.tsx`, `apps/web/src/components/assessments/*`.
+  - Paths: `apps/web/src/app/dashboard/assessments/page.tsx`, `apps/web/src/components/assessments/*`.
 
-- [ ] UI-03 Life story editor (M)
+- [~] UI-03 Life story editor (M)
   - DoD: Prompt selector, basic rich text (bold/italic/bullets), autosave draft, list with previews and timestamps.
+  - Status: Partial — prompt selector + textarea + list + delete are in; rich text and autosave pending.
   - Paths: `apps/web/src/app/stories/*`.
 
-- [ ] UI-04 Document uploads (S)
+- [x] UI-04 Document uploads (S)
   - DoD: Category picker, upload control, thumbnails, deletion with confirmation; 10 MB enforcement.
-  - Paths: `apps/web/src/app/documents/*`.
+  - Paths: `apps/web/src/app/dashboard/documents/page.tsx`, `apps/web/src/components/upload/DocumentUploader.tsx`.
 
 - [ ] UI-05 iDNA dashboard (M)
   - DoD: Assessment cards, story highlights, documents panel, next steps, overall completion; charts with placeholder data.
@@ -262,7 +289,7 @@ Notes & Assumptions
   - DoD: `apps/web/src/utils/api.ts` exposes typed clients for routers; error boundaries in pages.
   - Paths: `apps/web/src/utils/api.ts`.
 
-- [ ] INT-02 Replace mocks on journey (S)
+- [x] INT-02 Replace mocks on journey (S)
   - DoD: Dashboard pulls real progress from `progress` endpoint; optimistic updates on completion.
   - Paths: `apps/web/src/app/dashboard/page.tsx`.
 

@@ -15,6 +15,13 @@
       "when": 1760151275680,
       "tag": "0001_old_shiver_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1760216374233,
+      "tag": "0002_drop_todo",
+      "breakpoints": true
     }
   ]
 }

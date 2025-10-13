@@ -1,3 +1,5 @@
+"use client";
+
 import { authClient } from "@/lib/auth-client";
 import { useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
@@ -38,12 +40,13 @@ export default function SignInForm({
 			password: "",
 		},
 		onSubmit: async ({ value }) => {
-			await authClient.signIn.email(
-				{
-					email: value.email,
-					password: value.password,
-				},
-				{
+            await authClient.signIn.email(
+                {
+                    email: value.email,
+                    password: value.password,
+                    callbackURL: "/dashboard",
+                },
+                {
 					onSuccess: () => {
 						router.push("/dashboard");
 						toast.success("Sign in successful");

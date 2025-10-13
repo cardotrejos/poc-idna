@@ -7,7 +7,9 @@
     "check-types": "tsc -b",
     "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
     "dev": "bun run --hot src/index.ts",
-    "start": "bun run dist/index.js"
+    "start": "bun run dist/index.js",
+    "seed:users": "bun run src/scripts/seed-users.ts",
+    "seed:assessments": "bun run src/scripts/seed-assessments.ts"
   },
   "dependencies": {
     "hono": "^4.8.2",

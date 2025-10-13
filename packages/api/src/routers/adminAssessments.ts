@@ -1,6 +1,6 @@
 import { protectedProcedure } from "../index";
 import z from "zod";
-import { db, eq, and, inArray } from "@idna/db";
+import { db, eq, and, inArray, sql } from "@idna/db";
 import { assessmentUploads, assessmentTypes, assessmentResults } from "@idna/db/schema/assessments";
 import { user as userTable } from "@idna/db/schema/auth";
 
@@ -25,7 +25,7 @@ export const adminAssessmentsRouter = {
       const pageSize = input?.pageSize ?? 20;
 
       // Base query
-      const rows = await db
+      const base = db
         .select({
           id: assessmentUploads.id,
           status: assessmentUploads.status,
@@ -38,12 +38,22 @@ export const adminAssessmentsRouter = {
         })
         .from(assessmentUploads)
         .leftJoin(assessmentTypes, eq(assessmentTypes.id as any, assessmentUploads.typeId) as any)
-        .leftJoin(userTable, eq(userTable.id as any, assessmentUploads.studentUserId) as any)
-        .where(
-          and(
-            input?.status ? (eq(assessmentUploads.status as any, input.status) as any) : (undefined as any),
-          ) as any,
-        )
+        .leftJoin(userTable, eq(userTable.id as any, assessmentUploads.studentUserId) as any);
+
+      const conditions: any[] = [];
+      if (input?.status) conditions.push(eq(assessmentUploads.status as any, input.status) as any);
+      if (input?.q && input.q.trim()) {
+        const like = "%" + input.q.trim() + "%";
+        conditions.push(sql`${userTable.name} ILIKE ${like} OR ${userTable.email} ILIKE ${like}` as any);
+      }
+
+      const filtered = conditions.length === 0
+        ? base
+        : conditions.length === 1
+        ? base.where(conditions[0]!)
+        : base.where(and(...conditions) as any);
+
+      const rows = await filtered
         .orderBy(assessmentUploads.submittedAt)
         .limit(pageSize)
         .offset((page - 1) * pageSize);
@@ -108,9 +118,7 @@ export const adminAssessmentsRouter = {
     }),
 
   updateResult: protectedProcedure
-    .input(
-      z.object({ id: z.number().int(), resultsJson: z.record(z.any()), confidencePct: z.number().min(0).max(100).optional() }),
-    )
+    .input(z.object({ id: z.number().int(), resultsJson: z.any(), confidencePct: z.number().min(0).max(100).optional() }))
     .handler(async ({ input, context }) => {
       const role = (context.session?.user as any)?.role;
       const reviewerId = context.session?.user?.id;
@@ -170,4 +178,3 @@ export const adminAssessmentsRouter = {
       return { ok: true };
     }),
 };
-

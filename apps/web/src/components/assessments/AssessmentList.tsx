@@ -11,7 +11,7 @@ export function AssessmentList() {
 
   return (
     <div className="grid gap-3">
-      {data.map((item) => (
+      {data.map((item: any) => (
         <article key={item.uploadId} className="border rounded p-3" aria-labelledby={`ass-${item.uploadId}`}>
           <div className="flex items-center justify-between">
             <h3 id={`ass-${item.uploadId}`} className="font-semibold">
@@ -32,4 +32,3 @@ export function AssessmentList() {
     </div>
   );
 }
-

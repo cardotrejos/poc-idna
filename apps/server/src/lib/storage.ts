@@ -23,6 +23,9 @@ function getEnv(name: string, fallback?: string) {
 const R2_ENDPOINT = getEnv("R2_ENDPOINT", "http://localhost:9000");
 const R2_BUCKET = getEnv("R2_BUCKET", "idna-dev");
 const R2_REGION = process.env.R2_REGION || "auto"; // R2 ignores region but SDK requires a value
+const IS_R2 = /\.r2\.cloudflarestorage\.com$/i.test(new URL(R2_ENDPOINT).hostname);
+const FORCE_PATH = String(process.env.R2_FORCE_PATH_STYLE || "").toLowerCase();
+const FORCE_PATH_BOOL = FORCE_PATH === "1" || FORCE_PATH === "true";
 
 const s3 = new S3Client({
   region: R2_REGION,
@@ -31,7 +34,9 @@ const s3 = new S3Client({
     accessKeyId: getEnv("R2_ACCESS_KEY_ID", "minio"),
     secretAccessKey: getEnv("R2_SECRET_ACCESS_KEY", "miniopass"),
   },
-  forcePathStyle: true, // R2 works well with path-style addressing
+  // Default: virtual-hosted for R2, path-style for local/minio.
+  // Override with R2_FORCE_PATH_STYLE=true if needed.
+  forcePathStyle: FORCE_PATH_BOOL ? true : !IS_R2,
 });
 
 export const storage: StorageService = {
@@ -85,4 +90,18 @@ export function buildAssessmentKey(params: {
   const ts = new Date().toISOString().replaceAll(":", "-");
   const rand = Math.random().toString(36).slice(2, 8);
   return `assessments/${params.studentUserId}/${params.typeSlug}/${ts}-${rand}.${ext}`;
+}
+
+export function buildDocumentKey(params: {
+  studentUserId: string;
+  category: string;
+  filename: string;
+}) {
+  const ext = params.filename.includes(".")
+    ? params.filename.split(".").pop()!
+    : "bin";
+  const ts = new Date().toISOString().replaceAll(":", "-");
+  const rand = Math.random().toString(36).slice(2, 8);
+  const cat = params.category || "other";
+  return `documents/${params.studentUserId}/${cat}/${ts}-${rand}.${ext}`;
 }

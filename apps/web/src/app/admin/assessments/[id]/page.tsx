@@ -1,6 +1,6 @@
 "use client";
 
-import { orpc } from "@/utils/orpc";
+import { client } from "@/utils/orpc";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -15,7 +15,7 @@ export default function AdminAssessmentDetailPage() {
   useEffect(() => {
     if (!Number.isFinite(id)) return;
     (async () => {
-      const d = await orpc.adminAssessments.getUpload.query({ id });
+      const d = await client.adminAssessments.getUpload({ id });
       setDetail(d);
       setJsonText(JSON.stringify(d.result?.resultsJson ?? {}, null, 2));
     })();
@@ -47,14 +47,14 @@ export default function AdminAssessmentDetailPage() {
     setSaving(true);
     try {
       const resultsJson = JSON.parse(jsonText);
-      await orpc.adminAssessments.updateResult.mutate({ id, resultsJson, confidencePct: 100 });
+      await client.adminAssessments.updateResult({ id, resultsJson, confidencePct: 100 });
     } finally {
       setSaving(false);
     }
   }
 
   async function setStatus(status: "approved" | "rejected" | "needs_review") {
-    await orpc.adminAssessments.setStatus.mutate({ id, status });
+    await client.adminAssessments.setStatus({ id, status });
   }
 
   if (!detail) return <div className="p-4">Loading…</div>;
@@ -112,4 +112,3 @@ export default function AdminAssessmentDetailPage() {
     </div>
   );
 }
-

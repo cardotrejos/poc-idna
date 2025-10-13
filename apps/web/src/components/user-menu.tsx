@@ -1,3 +1,5 @@
+"use client";
+
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -58,3 +60,4 @@ export default function UserMenu() {
 		</DropdownMenu>
 	);
 }
+

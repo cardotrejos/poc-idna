@@ -1,3 +1,5 @@
+"use client";
+
 import { authClient } from "@/lib/auth-client";
 import { useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
@@ -23,14 +25,15 @@ export default function SignUpForm({
 			name: "",
 		},
 		onSubmit: async ({ value }) => {
-			await authClient.signUp.email(
-				{
-					email: value.email,
-					password: value.password,
-					name: value.name,
-				},
-				{
-					onSuccess: () => {
+            await authClient.signUp.email(
+                {
+                    email: value.email,
+                    password: value.password,
+                    name: value.name,
+                    callbackURL: "/dashboard",
+                },
+                {
+                    onSuccess: () => {
 						router.push("/dashboard");
 						toast.success("Sign up successful");
 					},
@@ -158,3 +161,4 @@ export default function SignUpForm({
 		</div>
 	);
 }
+

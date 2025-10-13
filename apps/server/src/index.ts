@@ -14,6 +14,9 @@ import { streamText, convertToModelMessages } from "ai";
 import { google } from "@ai-sdk/google";
 import { registerAssessmentUpload } from "./api/assessments/upload";
 import { registerAssessmentPreview } from "./api/assessments/preview";
+import { registerDocumentUpload } from "./api/documents/upload";
+import { registerDocumentPreview } from "./api/documents/preview";
+import { registerDocumentDelete } from "./api/documents/delete";
 
 const app = new Hono();
 
@@ -33,6 +36,9 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 // File upload endpoints
 registerAssessmentUpload(app);
 registerAssessmentPreview(app);
+registerDocumentUpload(app);
+registerDocumentPreview(app);
+registerDocumentDelete(app);
 
 export const apiHandler = new OpenAPIHandler(appRouter, {
 	plugins: [

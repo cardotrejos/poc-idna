@@ -1,6 +1,6 @@
 "use client";
 
-import { orpc } from "@/utils/orpc";
+import { orpc, client } from "@/utils/orpc";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
@@ -12,8 +12,7 @@ export default function AdminAssessmentsPage() {
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-assessments", { status, q, page }],
-    queryFn: () =>
-      orpc.adminAssessments.listUploads.query({ status: status as any, q, page, pageSize: 20 }),
+    queryFn: () => client.adminAssessments.listUploads({ status: status as any, q, page, pageSize: 20 }),
   });
 
   return (
@@ -130,4 +129,3 @@ export default function AdminAssessmentsPage() {
     </div>
   );
 }
-

@@ -52,7 +52,18 @@ export function registerAssessmentUpload(app: Hono) {
     });
 
     const arrayBuf = await (file as File).arrayBuffer();
-    await storage.put({ key, body: arrayBuf, contentType: (file as File).type || "application/octet-stream" });
+    try {
+      await storage.put({ key, body: arrayBuf, contentType: (file as File).type || "application/octet-stream" });
+    } catch (err: any) {
+      console.error("R2 putObject failed", {
+        bucket: process.env.R2_BUCKET,
+        endpoint: process.env.R2_ENDPOINT,
+        code: err?.name || err?.Code,
+        message: err?.message,
+        httpStatus: err?.$metadata?.httpStatusCode,
+      });
+      return c.json({ error: "Storage write failed (R2). Check credentials, bucket, and permissions." }, 502);
+    }
 
     const inserted = await db
       .insert(assessmentUploads)
