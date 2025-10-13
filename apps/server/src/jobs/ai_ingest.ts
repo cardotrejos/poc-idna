@@ -60,6 +60,9 @@ export async function processUpload(uploadId: number): Promise<
 
     const threshold = getConfidenceMin()
     const chain = getProviderChain()
+    if (chain.length === 0) {
+      throw new Error("AI_PROVIDER_CHAIN resolved to an empty list");
+    }
     let finalResults: Record<string, unknown> = {}
     let finalConfidence = 0
     let finalProvider: ProviderId = chain[0]

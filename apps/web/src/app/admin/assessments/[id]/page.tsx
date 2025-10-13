@@ -15,7 +15,7 @@ export default function AdminAssessmentDetailPage() {
   }
 
   // Fetch upload detail via TanStack Query (no useEffect)
-  const detailQ = useQuery(orpc.adminAssessments.getUpload.queryOptions({ id }));
+  const detailQ = useQuery(orpc.adminAssessments.getUpload.queryOptions({ input: { id } }));
 
   // Fetch signed preview URL via fetch + Query (credentials from the browser)
   const previewQ = useQuery({
@@ -69,7 +69,7 @@ export default function AdminAssessmentDetailPage() {
           initialJson={initialJson}
           onAfterChange={() => {
             // Refresh the detail after save/status update
-            queryClient.invalidateQueries({ queryKey: orpc.adminAssessments.getUpload.queryKey({ id }) });
+            queryClient.invalidateQueries({ queryKey: orpc.adminAssessments.getUpload.queryKey({ input: { id } }) });
           }}
         />
       </div>
