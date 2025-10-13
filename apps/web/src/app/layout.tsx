@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../index.css";
 import Providers from "@/components/providers";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import Header from "@/components/header";
 
 const geistSans = Geist({
@@ -29,12 +30,14 @@ export default function RootLayout({
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
-				<Providers>
-					<div className="grid grid-rows-[auto_1fr] h-svh">
-						<Header />
-						{children}
-					</div>
-				</Providers>
+				<NuqsAdapter>
+					<Providers>
+						<div className="grid grid-rows-[auto_1fr] h-svh">
+							<Header />
+							{children}
+						</div>
+					</Providers>
+				</NuqsAdapter>
 			</body>
 		</html>
 	);

@@ -1,17 +1,19 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { client } from "@/utils/orpc";
 import Link from "next/link";
-import { useState } from "react";
+import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 
 export default function AdminStudentsPage() {
-  const [q, setQ] = useState("");
-  const [page, setPage] = useState(1);
-  const qc = useQueryClient();
+  const [filters, setFilters] = useQueryStates({
+    q: parseAsString.withDefault(""),
+    page: parseAsInteger.withDefault(1),
+  });
+
   const studentsQ = useQuery({
-    queryKey: ["admin-students", q, page],
-    queryFn: () => client.adminStudents.list({ q, page, pageSize: 25 }),
+    queryKey: ["admin-students", filters.q, filters.page],
+    queryFn: () => client.adminStudents.list({ q: filters.q || undefined, page: filters.page, pageSize: 25 }),
   });
 
   return (
@@ -22,12 +24,19 @@ export default function AdminStudentsPage() {
         className="flex gap-2 items-end"
         onSubmit={(e) => {
           e.preventDefault();
-          qc.invalidateQueries({ queryKey: ["admin-students"] });
+          // Commit current query value and reset to page 1
+          setFilters({ q: filters.q, page: 1 });
         }}
       >
         <div className="flex flex-col">
           <label htmlFor="q" className="text-sm font-medium">Search</label>
-          <input id="q" value={q} onChange={(e) => setQ(e.target.value)} className="border rounded px-2 py-1" placeholder="Name or email" />
+          <input
+            id="q"
+            value={filters.q}
+            onChange={(e) => setFilters({ q: e.target.value })}
+            className="border rounded px-2 py-1"
+            placeholder="Name or email"
+          />
         </div>
         <button type="submit" className="border rounded px-3 py-2">Apply</button>
       </form>
@@ -62,9 +71,21 @@ export default function AdminStudentsPage() {
       )}
 
       <div className="flex gap-2">
-        <button type="button" className="border rounded px-3 py-1" onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</button>
-        <span className="px-2 py-1">Page {page}</span>
-        <button type="button" className="border rounded px-3 py-1" onClick={() => setPage((p) => p + 1)}>Next</button>
+        <button
+          type="button"
+          className="border rounded px-3 py-1"
+          onClick={() => setFilters({ page: Math.max(1, (filters.page || 1) - 1) })}
+        >
+          Prev
+        </button>
+        <span className="px-2 py-1">Page {filters.page}</span>
+        <button
+          type="button"
+          className="border rounded px-3 py-1"
+          onClick={() => setFilters({ page: (filters.page || 1) + 1 })}
+        >
+          Next
+        </button>
       </div>
     </div>
   );

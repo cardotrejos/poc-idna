@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { client, queryClient, orpc } from "@/utils/orpc";
 import { Button } from "@/components/ui/button";
@@ -17,29 +17,57 @@ export default function StoriesClient() {
   const [promptKey, setPromptKey] = useState(PROMPTS[0]!.key);
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
+  const [draftId, setDraftId] = useState<number | null>(null);
+  const timerRef = useRef<number | null>(null);
+  const lastTextRef = useRef("");
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  // Changing prompt creates a new draft thread
+  useEffect(() => {
+    setDraftId(null);
+    lastTextRef.current = "";
+  }, [promptKey]);
 
   const listQ = useQuery({
     queryKey: ["stories", "list", 1],
     queryFn: () => client.stories.list({ page: 1, pageSize: 20 }),
   });
 
-  async function onSave() {
-    const text = content.trim();
-    if (!text) return;
+  async function saveNow(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed) return;
     setSaving(true);
     try {
-      await client.stories.create({ promptKey, contentRichtext: text, isDraft: true });
-      setContent("");
-      await Promise.all([
-        listQ.refetch(),
-        queryClient.invalidateQueries({ queryKey: orpc.progress.getMy.queryKey() }),
-      ]);
-      toast.success("Draft saved");
+      if (draftId) {
+        await client.stories.update({ id: draftId, contentRichtext: trimmed, isDraft: true });
+      } else {
+        const res = await client.stories.create({ promptKey, contentRichtext: trimmed, isDraft: true });
+        setDraftId(res.id);
+        // First save affects progress; update dashboard metrics
+        queryClient.invalidateQueries({ queryKey: orpc.progress.getMy.queryKey() });
+      }
+      lastTextRef.current = trimmed;
+      // Only refetch list on first create or occasionally; here we refetch once at first create
+      if (!listQ.data?.items.length) await listQ.refetch();
     } catch (e: any) {
-      toast.error(e?.message || "Save failed");
+      toast.error(e?.message || "Autosave failed");
     } finally {
       setSaving(false);
     }
+  }
+
+  function scheduleAutosave(nextText: string) {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    // Avoid autosaving if nothing changed meaningfully
+    if (nextText.trim() === lastTextRef.current) return;
+    timerRef.current = window.setTimeout(() => {
+      void saveNow(nextText);
+    }, 800);
   }
 
   async function onDelete(id: number) {
@@ -77,16 +105,23 @@ export default function StoriesClient() {
           <textarea
             id="story-content"
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setContent(v);
+              scheduleAutosave(v);
+            }}
             rows={6}
             className="w-full border rounded p-2"
             placeholder="Write at least a few sentences…"
           />
         </div>
         <div>
-          <Button onClick={onSave} disabled={!content.trim() || saving} aria-disabled={!content.trim() || saving}>
-            {saving ? "Saving…" : "Save draft"}
+          <Button onClick={() => saveNow(content)} disabled={!content.trim() || saving} aria-disabled={!content.trim() || saving}>
+            {saving ? "Saving…" : draftId ? "Save now" : "Create draft"}
           </Button>
+          {draftId ? (
+            <span className="ml-2 text-xs text-muted-foreground">Autosaves after you stop typing</span>
+          ) : null}
         </div>
       </section>
 

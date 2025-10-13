@@ -1,6 +1,11 @@
 # iDNA MVP Tasks Backlog (October 2025)
 
 Progress Log (newest first)
+- 2025-10-13 — Admin review refactor + Admin Students URL state + Stories autosave
+  - Completed: AR-05 Admin assessment detail page refactor — removed fetch-in-useEffect; now uses TanStack Query for detail and preview; added targeted invalidation and toasts.
+  - Completed: Admin Students filters in URL using nuqs (`q`, `page`) with type-safe parsers; back/forward and shareable state.
+  - Completed: UI-03 Stories autosave — debounced (800ms) create/update of drafts; first save invalidates progress for dashboard.
+  - Notes: Full SSR for admin review still needs API proxy or same-site cookies; next up: workerize AI ingest (AI-03).
 - 2025-10-13 — Journey dashboard + Stories + Progress API + TS fixes
   - Completed: UI-01 Journey dashboard shell (progress ring, 5-step tracker, CTA cards)
   - Completed: API-02 Life stories CRUD (list/create/update/delete with ownership checks)
@@ -247,6 +252,10 @@ Notes & Assumptions
 - [x] AR-03 Side‑by‑side review (M)
   - DoD: Viewer shows original image/PDF preview and parsed JSON rendered nicely; edit form with validation; Approve/Reject.
   - Paths: `apps/web/src/app/admin/assessments/[id]/page.tsx`.
+ 
+ - [x] AR-05 Data loading refactor (S)
+  - DoD: Remove useEffect-based data fetching; load with TanStack Query; invalidate queries after update/approve/reject; preview URL fetched with credentials include.
+  - Paths: `apps/web/src/app/admin/assessments/[id]/page.tsx`.
 
 - [ ] AR-04 Audit trail (S)
   - DoD: Persist reviewer id, changes diff, timestamp; visible in activity panel.
@@ -266,7 +275,7 @@ Notes & Assumptions
 
 - [~] UI-03 Life story editor (M)
   - DoD: Prompt selector, basic rich text (bold/italic/bullets), autosave draft, list with previews and timestamps.
-  - Status: Partial — prompt selector + textarea + list + delete are in; rich text and autosave pending.
+  - Status: Partial — prompt selector + textarea + list + delete in; autosave done; rich text pending.
   - Paths: `apps/web/src/app/stories/*`.
 
 - [x] UI-04 Document uploads (S)
