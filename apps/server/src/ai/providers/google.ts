@@ -8,6 +8,8 @@ import { google } from "@ai-sdk/google";
 export const googleExtractor: AssessmentExtractor = {
   async extract({ bytes, mimeType: _mimeType, typeSlug }): Promise<ExtractedResult> {
     const schema = getSchemaFor(typeSlug);
+    const debugRaw = (process.env.AI_LOG_RAW || "").toLowerCase();
+    const shouldLogRaw = debugRaw === "1" || debugRaw === "true";
     try {
       const res = await generateText({
         model: google("gemini-2.5-flash"),
@@ -25,6 +27,9 @@ export const googleExtractor: AssessmentExtractor = {
       });
 
       const raw = res.text || "";
+      if (shouldLogRaw) {
+        console.info("[ai][google] raw response", { typeSlug, raw });
+      }
       // Extract first JSON object in the response
       const start = raw.indexOf("{");
       const end = raw.lastIndexOf("}");
@@ -37,11 +42,23 @@ export const googleExtractor: AssessmentExtractor = {
 
       try {
         parsed = schema.parse(parsed);
-      } catch {
+      } catch (err) {
+        if (shouldLogRaw) {
+          console.warn("[ai][google] schema parse failed", {
+            typeSlug,
+            error: (err as Error)?.message,
+            rawSnippet: raw.slice(0, 300),
+          });
+        }
         // leave as is for staff review
+        if (!parsed || Object.keys(parsed).length === 0) {
+          parsed = { _raw: raw };
+        }
       }
 
-      const confidence = parsed && Object.keys(parsed).length > 0 ? 70 : 0;
+      const hasStructured =
+        parsed && Object.keys(parsed).some((key) => key !== "_raw")
+      const confidence = hasStructured ? 70 : 0;
       const out: ExtractedResult = {
         results: parsed || {},
         confidencePct: confidence,
@@ -56,6 +73,9 @@ export const googleExtractor: AssessmentExtractor = {
       }
       return out;
     } catch {
+      if (shouldLogRaw) {
+        console.error("[ai][google] extractor threw; returning empty results", { typeSlug });
+      }
       return { results: {}, confidencePct: 0 };
     }
   },
