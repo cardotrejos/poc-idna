@@ -1,3 +1,5 @@
+import type { R2Bucket } from "alchemy/cloudflare"
+
 export interface Env {
   INTERNAL_INGEST_BASE_URL: string
   INTERNAL_API_SECRET: string

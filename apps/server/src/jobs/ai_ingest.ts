@@ -121,7 +121,7 @@ export async function processUpload(uploadId: number): Promise<
 
     await db
       .update(assessmentUploads)
-      .set({ status: "needs_review" })
+      .set({ status: "needs_review", updatedAt: new Date() })
       .where(eq(assessmentUploads.id, upload.id));
 
     // Record calls (one row per attempt)
@@ -147,7 +147,7 @@ export async function processUpload(uploadId: number): Promise<
   } catch (err) {
     await db
       .update(assessmentUploads)
-      .set({ status: "needs_review" })
+      .set({ status: "needs_review", updatedAt: new Date() })
       .where(eq(assessmentUploads.id, upload.id));
     await db.insert(aiCalls).values({
       uploadId: upload.id,

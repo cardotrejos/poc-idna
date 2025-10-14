@@ -80,6 +80,11 @@ export function registerAssessmentUpload(app: Hono) {
     // AI ingestion trigger
     const newId = inserted[0]?.id;
     if (newId) {
+      await db
+        .update(assessmentUploads)
+        .set({ status: "processing", updatedAt: new Date() })
+        .where(eq(assessmentUploads.id, newId));
+
       try {
         if (isAIIngestQueueConfigured()) {
           await enqueueAIIngest(newId);
@@ -96,6 +101,6 @@ export function registerAssessmentUpload(app: Hono) {
     }
 
     if (!newId) return c.json({ error: "Upload record not created" }, 500);
-    return c.json({ uploadId: newId, status: "uploaded" as const });
+    return c.json({ uploadId: newId, status: "processing" as const });
   });
 }
