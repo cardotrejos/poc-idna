@@ -11,10 +11,32 @@ type IngestMessage = {
   uploadId: number
 }
 
+function log(message: string, meta?: Record<string, unknown>) {
+  if (meta) {
+    console.log(`[ai-ingest-worker] ${message}`, meta)
+  } else {
+    console.log(`[ai-ingest-worker] ${message}`)
+  }
+}
+
+function logError(message: string, meta?: Record<string, unknown>) {
+  if (meta) {
+    console.error(`[ai-ingest-worker] ${message}`, meta)
+  } else {
+    console.error(`[ai-ingest-worker] ${message}`)
+  }
+}
+
 export default {
   // Queue consumer entrypoint
   async queue(batch: any, env: Env, ctx: any) {
     const base = env.INTERNAL_INGEST_BASE_URL.replace(/\/$/, "")
+
+    log("Received batch", {
+      messageCount: batch.messages?.length || 0,
+      base,
+      mode: (env.USE_EDGE_INGEST || "").toLowerCase() === "true" ? "edge" : "server",
+    })
 
     let hadFailure = false
 
@@ -38,15 +60,19 @@ export default {
 
         const useEdge = (env.USE_EDGE_INGEST || "").toLowerCase() === "true"
         if (!useEdge) {
+          log("Processing upload via server", { uploadId })
           await callServerIngest(base, env, uploadId)
         } else {
+          log("Processing upload via edge", { uploadId, model: env.WORKERS_AI_MODEL })
           await runEdgeIngest(base, env, uploadId)
         }
+
+        log("Completed upload", { uploadId })
       } catch (err) {
         // Allow batch retry
         hadFailure = true
         // Log for observability in Workers tail
-        console.error("AI ingest message failed", {
+        logError("AI ingest message failed", {
           id: msg.id,
           error: (err as Error)?.message,
         })
@@ -61,6 +87,7 @@ export default {
 
 async function callServerIngest(base: string, env: Env, uploadId: number) {
   const url = `${base}/internal/ingest/${uploadId}`
+  const start = Date.now()
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -73,10 +100,13 @@ async function callServerIngest(base: string, env: Env, uploadId: number) {
     const text = await res.text()
     throw new Error(`Internal ingest failed: ${res.status} ${text}`)
   }
+
+  log("Server ingest completed", { uploadId, elapsedMs: Date.now() - start })
 }
 
 async function runEdgeIngest(base: string, env: Env, uploadId: number) {
   // 1) Fetch metadata
+  log("Fetching ingest metadata", { uploadId })
   const metaRes = await fetch(`${base}/internal/ingest/meta/${uploadId}`, {
     headers: { "x-internal-secret": env.INTERNAL_API_SECRET },
   })
@@ -90,6 +120,7 @@ async function runEdgeIngest(base: string, env: Env, uploadId: number) {
   }
 
   // 2) Read bytes from R2
+  log("Fetching bytes from R2", { key: meta.storageKey })
   const obj = await env.R2.get(meta.storageKey)
   if (!obj) throw new Error(`R2 object not found for key ${meta.storageKey}`)
   const bytes = new Uint8Array(await obj.arrayBuffer())
@@ -114,10 +145,11 @@ async function runEdgeIngest(base: string, env: Env, uploadId: number) {
     const result: any = await env.AI.run(model, payload)
     rawText = typeof result?.response === "string" ? result.response : (result?.text || "")
   } catch (e: any) {
-    console.error("Workers AI error", e?.message || e)
+    logError("Workers AI error", { uploadId, error: e?.message || e })
   }
 
   // 4) Send to server for validation & persistence
+  log("Persisting edge ingest result", { uploadId, model })
   const persistRes = await fetch(`${base}/internal/ingest/complete`, {
     method: "POST",
     headers: {
@@ -138,4 +170,6 @@ async function runEdgeIngest(base: string, env: Env, uploadId: number) {
     const t = await persistRes.text()
     throw new Error(`persist failed: ${persistRes.status} ${t}`)
   }
+
+  log("Edge ingest completed", { uploadId, model })
 }
