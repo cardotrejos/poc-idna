@@ -43,7 +43,7 @@ Notes
 - Stage 2 (Workers AI) would require adding an `[ai]` binding in wrangler.toml. We intentionally omit it by default; keep `USE_EDGE_INGEST=false`.
 - Alchemy resources are created with `adopt: true`, so it can take control of existing queue/bucket/worker if you already provisioned them.
 
-After provisioning (server on Railway)
+After provisioning (server on Railway or local dev server)
 - Set the producer/env variables used by the server to enqueue messages via REST:
   - `CF_ACCOUNT_ID` — from Cloudflare (or `wrangler whoami`)
   - `CF_AI_INGEST_QUEUE_ID` — queue name or ID (Alchemy output or CF dashboard)
@@ -58,3 +58,4 @@ Verification
 - `bun run infra:up` outputs resource names; confirm in Cloudflare dashboard (Queues and Workers).
 - Tail consumer logs: `wrangler tail idna-ai-ingest-consumer` (optional)
 - Upload a test assessment → verify: message consumed, server `/internal/ingest/:id` called, DB rows in `assessment_results` and `ai_calls` created, `assessment_uploads.status=needs_review`.
+  - Server logs now emit `[queues]` lines showing whether the queue config is complete and each enqueue attempt.
