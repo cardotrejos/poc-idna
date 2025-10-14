@@ -28,7 +28,13 @@ export async function enqueueAIIngest(uploadId: number) {
       Authorization: `Bearer ${apiToken}`,
       "content-type": "application/json",
     },
-    body: JSON.stringify({ body: { uploadId } }),
+    body: JSON.stringify({
+      messages: [
+        {
+          body: { uploadId },
+        },
+      ],
+    }),
   })
 
   if (!res.ok) {
