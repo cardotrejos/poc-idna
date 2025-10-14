@@ -69,11 +69,7 @@ export async function enqueueAIIngest(uploadId: number) {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      messages: [
-        {
-          body: { uploadId },
-        },
-      ],
+      body: { uploadId },
     }),
   })
 
