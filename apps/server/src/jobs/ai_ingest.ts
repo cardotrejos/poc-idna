@@ -12,17 +12,10 @@ function getConfidenceMin() {
   return Number.isFinite(n) ? n : 60
 }
 
-function shouldAllowFallbacks() {
-  const raw = (process.env.AI_PROVIDER_FALLBACKS || "").toLowerCase()
-  if (!raw) return true
-  return !["0", "false", "no", "off"].includes(raw)
-}
-
 function getProviderChain(): ProviderId[] {
   const primary = String(process.env.AI_PROVIDER || "google").toLowerCase() as ProviderId
   const allowed: ProviderId[] = ["google", "openai", "anthropic"]
   const chainEnv = (process.env.AI_PROVIDER_CHAIN || "").toLowerCase()
-  const allowFallbacks = shouldAllowFallbacks()
   let chain: ProviderId[] = []
   if (chainEnv) {
     chain = chainEnv
@@ -37,14 +30,7 @@ function getProviderChain(): ProviderId[] {
       unique.push(provider)
     }
   }
-  if (!unique.includes(primary)) {
-    unique.unshift(primary)
-  }
-  if (allowFallbacks) {
-    for (const p of allowed) {
-      if (!unique.includes(p)) unique.push(p)
-    }
-  }
+  if (!unique.includes(primary)) unique.unshift(primary)
   return unique
 }
 
