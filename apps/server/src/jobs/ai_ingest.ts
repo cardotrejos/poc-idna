@@ -12,10 +12,17 @@ function getConfidenceMin() {
   return Number.isFinite(n) ? n : 60
 }
 
+function shouldAllowFallbacks() {
+  const raw = (process.env.AI_PROVIDER_FALLBACKS || "").toLowerCase()
+  if (!raw) return true
+  return !["0", "false", "no", "off"].includes(raw)
+}
+
 function getProviderChain(): ProviderId[] {
   const primary = String(process.env.AI_PROVIDER || "google").toLowerCase() as ProviderId
   const allowed: ProviderId[] = ["google", "openai", "anthropic"]
   const chainEnv = (process.env.AI_PROVIDER_CHAIN || "").toLowerCase()
+  const allowFallbacks = shouldAllowFallbacks()
   let chain: ProviderId[] = []
   if (chainEnv) {
     chain = chainEnv
@@ -24,9 +31,21 @@ function getProviderChain(): ProviderId[] {
       .filter((s): s is ProviderId => (allowed as string[]).includes(s))
   }
   if (chain.length === 0) chain = [primary]
-  // Append remaining providers to try as fallbacks
-  for (const p of allowed) if (!chain.includes(p)) chain.push(p)
-  return chain
+  const unique: ProviderId[] = []
+  for (const provider of chain) {
+    if ((allowed as string[]).includes(provider) && !unique.includes(provider)) {
+      unique.push(provider)
+    }
+  }
+  if (!unique.includes(primary)) {
+    unique.unshift(primary)
+  }
+  if (allowFallbacks) {
+    for (const p of allowed) {
+      if (!unique.includes(p)) unique.push(p)
+    }
+  }
+  return unique
 }
 
 export async function processUpload(uploadId: number): Promise<
