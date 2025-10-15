@@ -123,6 +123,13 @@ export async function processUpload(uploadId: number): Promise<
     }
 
     // Persist results and usage
+    console.info("[ai][ingest] saving results", { 
+      uploadId: upload.id, 
+      typeId: type.id, 
+      confidencePct: finalConfidence,
+      resultsKeys: Object.keys(finalResults),
+    });
+    
     const inserted = await db
       .insert(assessmentResults)
       .values({
@@ -132,6 +139,11 @@ export async function processUpload(uploadId: number): Promise<
         confidencePct: finalConfidence,
       })
       .returning({ id: assessmentResults.id });
+
+    console.info("[ai][ingest] results saved", { 
+      resultId: inserted[0]?.id,
+      uploadId: upload.id,
+    });
 
     await db
       .update(assessmentUploads)
@@ -159,6 +171,11 @@ export async function processUpload(uploadId: number): Promise<
       attempts: callLogs.length,
     }
   } catch (err) {
+    console.error("[ai][ingest] processing failed", {
+      uploadId: upload.id,
+      error: (err as Error)?.message,
+      stack: (err as Error)?.stack,
+    });
     await db
       .update(assessmentUploads)
       .set({ status: "needs_review", updatedAt: new Date() })
@@ -172,5 +189,6 @@ export async function processUpload(uploadId: number): Promise<
       costMinorUnits: 0,
       status: "failed",
     });
+    return undefined;
   }
 }

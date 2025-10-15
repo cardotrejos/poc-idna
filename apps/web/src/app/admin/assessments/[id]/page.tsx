@@ -49,6 +49,9 @@ export default function AdminAssessmentDetailPage() {
 
   const detail = detailQ.data!;
   const initialJson = JSON.stringify(detail.result?.resultsJson ?? {}, null, 2);
+  // Add resultId to key so Editor remounts when results change
+  const editorKey = `${id}-${detail.result?.id ?? 'empty'}`;
+  const lastCall = (detail as any).lastCall;
 
   return (
     <div className="space-y-4">
@@ -65,9 +68,9 @@ export default function AdminAssessmentDetailPage() {
         </div>
         <div>
           <strong>Last AI:</strong>{" "}
-          {detail.lastCall ? (
+          {lastCall ? (
             <>
-              {detail.lastCall.provider} ({detail.lastCall.model}) — {new Date(detail.lastCall.createdAt as any).toLocaleString()} • tokens in/out: {detail.lastCall.tokensIn}/{detail.lastCall.tokensOut}
+              {lastCall.provider} ({lastCall.model}) — {new Date(lastCall.createdAt).toLocaleString()} • tokens in/out: {lastCall.tokensIn}/{lastCall.tokensOut}
             </>
           ) : (
             <span className="text-gray-500">—</span>
@@ -89,11 +92,10 @@ export default function AdminAssessmentDetailPage() {
         </section>
 
         <Editor
-          key={id}
+          key={editorKey}
           id={id}
           initialJson={initialJson}
           onAfterChange={() => {
-            // Refresh the detail after save/status update
             queryClient.invalidateQueries({ queryKey: orpc.adminAssessments.getUpload.queryKey({ input: { id } }) });
           }}
         />
@@ -165,9 +167,13 @@ function Editor({
     }
   }
 
+  const hasData = jsonText.trim() !== '{}' && jsonText.trim() !== '';
+
   return (
     <section aria-label="Extracted JSON" className="border rounded p-2">
-      <label htmlFor="json" className="text-sm font-medium">Extracted result (editable JSON)</label>
+      <label htmlFor="json" className="text-sm font-medium">
+        Extracted result {hasData ? '(editable)' : '(no data yet)'}
+      </label>
       <textarea
         id="json"
         name="json"
@@ -175,15 +181,16 @@ function Editor({
         value={jsonText}
         onChange={(e) => setJsonText(e.target.value)}
         aria-invalid={!parsedOk}
+        placeholder={hasData ? '' : 'No results yet. Click "Re-analyze" to extract data from the document.'}
       />
       {!parsedOk && (
         <div className="text-red-600 text-sm mt-1" role="alert">Invalid JSON</div>
       )}
       <div className="flex gap-2 mt-2">
-        <button type="button" className="border rounded px-3 py-2" onClick={saveEdits} disabled={!parsedOk || saving}>
+        <button type="button" className="border rounded px-3 py-2" onClick={saveEdits} disabled={!parsedOk || saving || !hasData}>
           {saving ? "Saving…" : "Save"}
         </button>
-        <button type="button" className="border rounded px-3 py-2" onClick={() => setStatus("approved")}>
+        <button type="button" className="border rounded px-3 py-2" onClick={() => setStatus("approved")} disabled={!hasData}>
           Approve
         </button>
         <button type="button" className="border rounded px-3 py-2" onClick={() => setStatus("rejected")}>
