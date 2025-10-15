@@ -7,12 +7,12 @@ export const schemaByType = {
     typeLabel: z.string().optional().describe("Human label like 'Architect (INTJ-A)' if present"),
     variant: z.string().optional().describe("Assertive (A) or Turbulent (T) if present"),
     traits: z.object({
-      mind: z.number().min(0).max(100),
-      energy: z.number().min(0).max(100),
-      nature: z.number().min(0).max(100),
-      tactics: z.number().min(0).max(100),
-      identity: z.number().min(0).max(100),
-    }).partial(),
+      mind: z.number().min(0).max(100).optional(),
+      energy: z.number().min(0).max(100).optional(),
+      nature: z.number().min(0).max(100).optional(),
+      tactics: z.number().min(0).max(100).optional(),
+      identity: z.number().min(0).max(100).optional(),
+    }).optional(),
     summary: z.string().optional(),
   }),
   // Big Five sample
