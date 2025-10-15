@@ -87,8 +87,8 @@ export const googleExtractor: AssessmentExtractor = {
           schema,
           temperature: 0,
           messages: [
-            { role: "system", content: "From the provided text, extract structured JSON that matches the schema. Extract all available data." },
-            { role: "user", content: [{ type: "text", text: plaintext.slice(0, 16000) }] },
+            { role: "system", content: "You are a data extraction expert. Extract structured data from the text and respond with ONLY valid JSON." },
+            { role: "user", content: `Extract assessment data from this text. Return JSON with these fields if present:\n- type: personality type code\n- typeLabel: full name of type\n- variant: A or T\n- traits: object with mind, energy, nature, tactics, identity (0-100)\n- summary: brief description\n\nText:\n${plaintext.slice(0, 16000)}` },
           ],
           maxOutputTokens: 1000,
         })
@@ -96,7 +96,15 @@ export const googleExtractor: AssessmentExtractor = {
         if (shouldLogRaw) {
           console.info("[ai][google] text-based extraction", { keys: Object.keys(obj3), obj3 });
         }
-        if (Object.keys(obj3).length > 0) {
+        
+        // Validate we got real data, not just schema placeholders
+        const hasRealData = obj3 && (
+          (typeof obj3.type === "string" && obj3.type.length > 1) ||
+          (typeof obj3.typeLabel === "string" && obj3.typeLabel.length > 3) ||
+          (obj3.traits && Object.keys(obj3.traits).length > 0)
+        );
+        
+        if (hasRealData) {
           const usage: any = (res3 as any).usage;
           return { 
             results: obj3, 
@@ -107,6 +115,8 @@ export const googleExtractor: AssessmentExtractor = {
               completionTokens: usage.completionTokens ?? usage.outputTokens,
             } : undefined,
           }
+        } else if (shouldLogRaw) {
+          console.warn("[ai][google] extracted object has no real data", { obj3 });
         }
       }
     } catch (err2) {
