@@ -127,6 +127,7 @@ export const adminAssessmentsRouter = {
         })
         .from(assessmentResults)
         .where(eq(assessmentResults.uploadId as any, upload.id) as any)
+        .orderBy(sql`${assessmentResults.id} desc` as any)
         .limit(1);
 
       const [lastCall] = await db
