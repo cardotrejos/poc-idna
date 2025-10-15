@@ -78,7 +78,7 @@ export default function AdminAssessmentsPage() {
         </button>
       </form>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto relative">
         <table className="min-w-full text-sm" role="table">
           <thead>
             <tr className="text-left border-b">
@@ -89,7 +89,7 @@ export default function AdminAssessmentsPage() {
               <th className="py-2 pr-4">Confidence</th>
               <th className="py-2 pr-4">Submitted</th>
               <th className="py-2 pr-4">Last AI</th>
-              <th className="py-2 pr-4">Action</th>
+              <th className="py-2 pr-4 sticky right-0 bg-white">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -119,7 +119,7 @@ export default function AdminAssessmentsPage() {
                     <span className="text-gray-500">—</span>
                   )}
                 </td>
-                <td className="py-2 pr-4">
+                <td className="py-2 pr-4 sticky right-0 bg-white">
                   <Link href={`/admin/assessments/${row.id}`} className="underline">
                     Review
                   </Link>
