@@ -2,6 +2,7 @@ import { protectedProcedure } from "../index";
 import z from "zod";
 import { db, eq, and, inArray, sql } from "@idna/db";
 import { assessmentUploads, assessmentTypes, assessmentResults } from "@idna/db/schema/assessments";
+import { aiCalls } from "@idna/db/schema/ai";
 import { user as userTable } from "@idna/db/schema/auth";
 
 const statusEnum = z.enum(["uploaded", "processing", "needs_review", "approved", "rejected"]);
@@ -60,16 +61,30 @@ export const adminAssessmentsRouter = {
 
       const uploadIds = rows.map((r) => r.id);
       let confidences: Record<number, number> = {};
+      let lastCall: Record<number, { provider: string; model: string; createdAt: Date } | undefined> = {};
       if (uploadIds.length) {
         const resRows = await db
           .select({ id: assessmentResults.id, uploadId: assessmentResults.uploadId, confidencePct: assessmentResults.confidencePct })
           .from(assessmentResults)
           .where(inArray(assessmentResults.uploadId as any, uploadIds) as any);
         for (const r of resRows) confidences[r.uploadId] = r.confidencePct ?? 0;
+
+        const callRows = await db
+          .select({ uploadId: aiCalls.uploadId, provider: aiCalls.provider, model: aiCalls.model, createdAt: aiCalls.createdAt })
+          .from(aiCalls)
+          .where(inArray(aiCalls.uploadId as any, uploadIds) as any)
+          .orderBy(sql`${aiCalls.createdAt} desc` as any);
+        for (const c of callRows) {
+          if (!lastCall[c.uploadId]) lastCall[c.uploadId] = { provider: c.provider, model: c.model, createdAt: c.createdAt as any };
+        }
       }
 
       return {
-        items: rows.map((r) => ({ ...r, confidencePct: confidences[r.id] ?? 0 })),
+        items: rows.map((r) => ({
+          ...r,
+          confidencePct: confidences[r.id] ?? 0,
+          lastCall: lastCall[r.id] || null,
+        })),
         page,
         pageSize,
       };
@@ -114,7 +129,14 @@ export const adminAssessmentsRouter = {
         .where(eq(assessmentResults.uploadId as any, upload.id) as any)
         .limit(1);
 
-      return { upload, result: result ?? null };
+      const [lastCall] = await db
+        .select({ provider: aiCalls.provider, model: aiCalls.model, tokensIn: aiCalls.tokensIn, tokensOut: aiCalls.tokensOut, createdAt: aiCalls.createdAt })
+        .from(aiCalls)
+        .where(eq(aiCalls.uploadId as any, upload.id) as any)
+        .orderBy(sql`${aiCalls.createdAt} desc` as any)
+        .limit(1);
+
+      return { upload, result: result ?? null, lastCall: lastCall ?? null };
     }),
 
   updateResult: protectedProcedure

@@ -1,6 +1,6 @@
 import type { AssessmentExtractor, ExtractedResult } from "./base"
 import { getSchemaFor } from "../schemas"
-import { generateText } from "ai"
+import { generateObject } from "ai"
 // Optional dependency; ensure @ai-sdk/anthropic is installed
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { anthropic } from "@ai-sdk/anthropic"
@@ -13,14 +13,15 @@ export const anthropicExtractor: AssessmentExtractor = {
     const debugRaw = (process.env.AI_LOG_RAW || "").toLowerCase()
     const shouldLogRaw = debugRaw === "1" || debugRaw === "true"
     try {
-      const res = await generateText({
+      const res = await generateObject({
         model: anthropic(MODEL),
+        schema,
         messages: [
-          { role: "system", content: "You extract structured data from assessment screenshots. Return ONLY valid JSON." },
+          { role: "system", content: "Extract structured data for this assessment. Respond ONLY with valid JSON matching the schema." },
           {
             role: "user",
             content: [
-              { type: "text", text: `Extract fields for assessment type slug \"${typeSlug}\". Return only JSON.` },
+              { type: "text", text: `Type slug: ${typeSlug}` },
               { type: "file", data: bytes, mediaType: mimeType },
             ],
           },
@@ -28,35 +29,12 @@ export const anthropicExtractor: AssessmentExtractor = {
         maxOutputTokens: 400,
       })
 
-      const raw = res.text || ""
+      const parsed: any = (res as any).object ?? {}
       if (shouldLogRaw) {
-        console.info("[ai][anthropic] raw response", { typeSlug, raw })
-      }
-      const start = raw.indexOf("{")
-      const end = raw.lastIndexOf("}")
-      let parsed: any = {}
-      if (start >= 0 && end > start) {
-        try {
-          parsed = JSON.parse(raw.slice(start, end + 1))
-        } catch {}
+        console.info("[ai][anthropic] object keys", { typeSlug, keys: Object.keys(parsed || {}) })
       }
 
-      try {
-        parsed = schema.parse(parsed)
-      } catch (err) {
-        if (shouldLogRaw) {
-          console.warn("[ai][anthropic] schema parse failed", {
-            typeSlug,
-            error: (err as Error)?.message,
-            rawSnippet: raw.slice(0, 300),
-          })
-        }
-        if (!parsed || Object.keys(parsed).length === 0) {
-          parsed = { _raw: raw }
-        }
-      }
-
-      const hasStructured = parsed && Object.keys(parsed).some((key) => key !== "_raw")
+      const hasStructured = parsed && Object.keys(parsed).length > 0
       const confidence = hasStructured ? 70 : 0
       const out: ExtractedResult = {
         results: parsed || {},

@@ -1,7 +1,7 @@
 "use client";
 
-import { orpc, client } from "@/utils/orpc";
-import { useQuery } from "@tanstack/react-query";
+import { orpc, client, queryClient } from "@/utils/orpc";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -13,6 +13,20 @@ export default function AdminAssessmentsPage() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-assessments", { status, q, page }],
     queryFn: () => client.adminAssessments.listUploads({ status: status as any, q, page, pageSize: 20 }),
+  });
+
+  const reanalyzeMut = useMutation({
+    mutationFn: async (uploadId: number) => {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/uploads/assessments/${uploadId}/analyze`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+      return res.json() as Promise<{ confidencePct: number; provider: string; model?: string }>;
+    },
+    onSuccess: async () => {
+      await refetch();
+    },
   });
 
   return (
@@ -74,6 +88,7 @@ export default function AdminAssessmentsPage() {
               <th className="py-2 pr-4">Status</th>
               <th className="py-2 pr-4">Confidence</th>
               <th className="py-2 pr-4">Submitted</th>
+              <th className="py-2 pr-4">Last AI</th>
               <th className="py-2 pr-4">Action</th>
             </tr>
           </thead>
@@ -95,10 +110,30 @@ export default function AdminAssessmentsPage() {
                 <td className="py-2 pr-4">{row.status}</td>
                 <td className="py-2 pr-4">{row.confidencePct}%</td>
                 <td className="py-2 pr-4">{new Date(row.submittedAt as any).toLocaleString()}</td>
+                <td className="py-2 pr-4 text-xs text-gray-700">
+                  {row.lastCall ? (
+                    <span title={new Date(row.lastCall.createdAt as any).toLocaleString()}>
+                      {row.lastCall.provider} · {row.lastCall.model}
+                    </span>
+                  ) : (
+                    <span className="text-gray-500">—</span>
+                  )}
+                </td>
                 <td className="py-2 pr-4">
                   <Link href={`/admin/assessments/${row.id}`} className="underline">
                     Review
                   </Link>
+                  <span className="mx-2">•</span>
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() => reanalyzeMut.mutate(row.id)}
+                    disabled={reanalyzeMut.isPending}
+                    aria-label={`Re-analyze upload ${row.id}`}
+                    title="Re-run AI analysis"
+                  >
+                    {reanalyzeMut.isPending ? "Re-analyzing…" : "Re-analyze"}
+                  </button>
                 </td>
               </tr>
             ))}

@@ -1,63 +1,38 @@
 import type { AssessmentExtractor, ExtractedResult } from "./base";
 import { getSchemaFor } from "../schemas";
-import { generateText } from "ai";
+import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 
 // no-op
 
 export const googleExtractor: AssessmentExtractor = {
-  async extract({ bytes, mimeType: _mimeType, typeSlug }): Promise<ExtractedResult> {
+  async extract({ bytes, mimeType, typeSlug }): Promise<ExtractedResult> {
     const schema = getSchemaFor(typeSlug);
     const debugRaw = (process.env.AI_LOG_RAW || "").toLowerCase();
     const shouldLogRaw = debugRaw === "1" || debugRaw === "true";
     try {
-      const res = await generateText({
+      const res = await generateObject({
         model: google("gemini-2.5-flash"),
+        schema,
         messages: [
-          { role: "system", content: "You extract structured data from assessment screenshots. Return ONLY valid JSON." },
+          { role: "system", content: "Extract structured data for this assessment. Respond ONLY with valid JSON matching the schema." },
           {
             role: "user",
             content: [
-              { type: "text", text: `Extract fields for assessment type slug "${typeSlug}". Return only JSON.` },
-              { type: "file", data: bytes, mediaType: _mimeType },
+              { type: "text", text: `Type slug: ${typeSlug}` },
+              { type: "file", data: bytes, mediaType: mimeType },
             ],
           },
         ],
         maxOutputTokens: 400,
       });
 
-      const raw = res.text || "";
+      const parsed = (res as any).object ?? {};
       if (shouldLogRaw) {
-        console.info("[ai][google] raw response", { typeSlug, raw });
-      }
-      // Extract first JSON object in the response
-      const start = raw.indexOf("{");
-      const end = raw.lastIndexOf("}");
-      let parsed: any = {};
-      if (start >= 0 && end > start) {
-        try {
-          parsed = JSON.parse(raw.slice(start, end + 1));
-        } catch {}
+        console.info("[ai][google] object keys", { typeSlug, keys: Object.keys(parsed || {}) });
       }
 
-      try {
-        parsed = schema.parse(parsed);
-      } catch (err) {
-        if (shouldLogRaw) {
-          console.warn("[ai][google] schema parse failed", {
-            typeSlug,
-            error: (err as Error)?.message,
-            rawSnippet: raw.slice(0, 300),
-          });
-        }
-        // leave as is for staff review
-        if (!parsed || Object.keys(parsed).length === 0) {
-          parsed = { _raw: raw };
-        }
-      }
-
-      const hasStructured =
-        parsed && Object.keys(parsed).some((key) => key !== "_raw")
+      const hasStructured = parsed && Object.keys(parsed).length > 0;
       const confidence = hasStructured ? 70 : 0;
       const out: ExtractedResult = {
         results: parsed || {},
@@ -72,9 +47,9 @@ export const googleExtractor: AssessmentExtractor = {
         };
       }
       return out;
-    } catch {
+    } catch (err) {
       if (shouldLogRaw) {
-        console.error("[ai][google] extractor threw; returning empty results", { typeSlug });
+        console.error("[ai][google] extractor threw; returning empty results", { typeSlug, error: (err as Error)?.message });
       }
       return { results: {}, confidencePct: 0 };
     }
