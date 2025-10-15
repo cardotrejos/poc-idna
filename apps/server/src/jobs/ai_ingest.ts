@@ -16,14 +16,23 @@ function getProviderChain(): ProviderId[] {
   const primary = String(process.env.AI_PROVIDER || "google").toLowerCase() as ProviderId
   const allowed: ProviderId[] = ["google", "openai", "anthropic"]
   const chainEnv = (process.env.AI_PROVIDER_CHAIN || "").toLowerCase()
+
   let chain: ProviderId[] = []
   if (chainEnv) {
     chain = chainEnv
       .split(",")
       .map((s) => s.trim())
       .filter((s): s is ProviderId => (allowed as string[]).includes(s))
+  } else {
+    // Auto-augment default chain based on available API keys.
+    // This means you still get fallbacks without having to set AI_PROVIDER_CHAIN.
+    const hasOpenAI = !!process.env.OPENAI_API_KEY
+    const hasAnthropic = !!process.env.ANTHROPIC_API_KEY
+    chain = [primary]
+    if (primary !== "openai" && hasOpenAI) chain.push("openai")
+    if (primary !== "anthropic" && hasAnthropic) chain.push("anthropic")
   }
-  if (chain.length === 0) chain = [primary]
+
   const unique: ProviderId[] = []
   for (const provider of chain) {
     if ((allowed as string[]).includes(provider) && !unique.includes(provider)) {

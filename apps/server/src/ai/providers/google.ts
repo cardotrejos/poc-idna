@@ -48,10 +48,45 @@ export const googleExtractor: AssessmentExtractor = {
       }
       return out;
     } catch (err) {
+      // Fallback: try plain JSON prompting via generateText and parse
       if (shouldLogRaw) {
-        console.error("[ai][google] extractor threw; returning empty results", { typeSlug, error: (err as Error)?.message });
+        console.warn("[ai][google] structured output failed; falling back to JSON text parse", {
+          typeSlug,
+          error: (err as Error)?.message,
+        });
       }
-      return { results: {}, confidencePct: 0 };
+      try {
+        const { generateText } = await import("ai");
+        const res2: any = await generateText({
+          model: google("gemini-2.5-flash"),
+          messages: [
+            { role: "system", content: "Return ONLY valid JSON. No prose." },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: `Type slug: ${typeSlug}. Return ONLY JSON matching the intended schema.` },
+                { type: "file", data: bytes, mediaType: mimeType },
+              ],
+            },
+          ],
+          maxOutputTokens: 400,
+        });
+        const raw = String(res2.text || "");
+        const s = raw.indexOf("{");
+        const e = raw.lastIndexOf("}");
+        let parsed: any = {};
+        if (s >= 0 && e > s) {
+          try { parsed = JSON.parse(raw.slice(s, e + 1)); } catch {}
+        }
+        try { parsed = schema.parse(parsed); } catch {}
+        const ok = parsed && Object.keys(parsed).length > 0;
+        return { results: ok ? parsed : {}, confidencePct: ok ? 60 : 0, model: "gemini-2.5-flash" };
+      } catch (err2) {
+        if (shouldLogRaw) {
+          console.error("[ai][google] fallback parse also failed", { typeSlug, error: (err2 as Error)?.message });
+        }
+        return { results: {}, confidencePct: 0 };
+      }
     }
   },
 };
