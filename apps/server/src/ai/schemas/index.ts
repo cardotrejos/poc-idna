@@ -3,7 +3,9 @@ import z from "zod";
 export const schemaByType = {
   // 16 personalities example
   "16p": z.object({
-    type: z.string().describe("Four-letter type plus variant, e.g. INTJ-A"),
+    type: z.string().optional().describe("Four-letter type plus variant, e.g. INTJ-A"),
+    typeLabel: z.string().optional().describe("Human label like 'Architect (INTJ-A)' if present"),
+    variant: z.string().optional().describe("Assertive (A) or Turbulent (T) if present"),
     traits: z.object({
       mind: z.number().min(0).max(100),
       energy: z.number().min(0).max(100),

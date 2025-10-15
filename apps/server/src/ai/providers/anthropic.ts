@@ -20,6 +20,7 @@ export const anthropicExtractor: AssessmentExtractor = {
       const res = await generateObject({
         model: anthropic(MODEL),
         schema,
+        temperature: 0,
         messages: [
           { role: "system", content: "Extract structured data for this assessment. Respond ONLY with valid JSON matching the schema." },
           {
@@ -60,6 +61,36 @@ export const anthropicExtractor: AssessmentExtractor = {
           error: (err as Error)?.message,
         })
       }
+      // Secondary attempt: transcribe visible text first, then structure
+      try {
+        const { generateText } = await import("ai")
+        const t = await generateText({
+          model: anthropic(MODEL),
+          temperature: 0,
+          messages: [
+            { role: "system", content: "Extract ONLY the visible text from the document/image. No commentary." },
+            { role: "user", content: [mediaPart] },
+          ],
+          maxOutputTokens: 500,
+        })
+        const plaintext = String(t.text || "").trim()
+        if (plaintext.length > 0) {
+          const res3: any = await generateObject({
+            model: anthropic(MODEL),
+            schema,
+            temperature: 0,
+            messages: [
+              { role: "system", content: "From the provided text, extract structured JSON that matches the schema. Respond ONLY JSON." },
+              { role: "user", content: [{ type: "text", text: plaintext.slice(0, 8000) }] },
+            ],
+            maxOutputTokens: 400,
+          })
+          const obj3 = res3.object ?? {}
+          if (Object.keys(obj3).length > 0) {
+            return { results: obj3, confidencePct: 65, model: MODEL }
+          }
+        }
+      } catch {}
       if (shouldLogRaw) {
         console.warn("[ai][anthropic] structured output failed; falling back to JSON text parse", {
           typeSlug,
